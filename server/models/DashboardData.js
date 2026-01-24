@@ -1,34 +1,23 @@
+// server/models/DashboardData.js
 const mongoose = require('mongoose');
 
-const LinkSchema = new mongoose.Schema({
-    title: String,
-    url: String,
-    desc: String,
-    img: String,
-    time: String
-});
-
-const TopicSchema = new mongoose.Schema({
-    name: String,
-    links: [LinkSchema]
-});
-
-const QuickLinkSchema = new mongoose.Schema({
-    title: String,
-    url: String
-});
-
-const VisualFavSchema = new mongoose.Schema({
-    title: String,
-    url: String,
-    img: String
-});
-
 const DashboardSchema = new mongoose.Schema({
-    topics: [TopicSchema],
-    quickPills: [QuickLinkSchema],
-    visualFavs: [VisualFavSchema]
+  title: {
+    type: String,
+    required: true,
+  },
+  value: { // הלינק לאתר
+    type: String,
+    required: true,
+  },
+  type: { // link, file, widget
+    type: String,
+    default: 'link',
+  },
+  category: { // work, social, design, etc.
+    type: String,
+    default: 'general',
+  }
 });
 
-// אנחנו נשמור מסמך יחיד עבור המשתמש (Singleton)
 module.exports = mongoose.model('DashboardData', DashboardSchema);
