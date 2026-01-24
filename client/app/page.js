@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 
-const API_URL = 'http://localhost:5001/api/data';
+const API_URL = 'https://command-center-6pqx.onrender.com/api/data';
 
 export default function Home() {
   const [state, setState] = useState({
