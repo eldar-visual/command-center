@@ -1,29 +1,21 @@
-// client/app/page.js
 'use client';
 import { useState, useEffect } from 'react';
 import styles from './page.module.css';
 
-// וודא שזו הכתובת הנכונה (RENDER או LOCALHOST)
 const API_URL = 'https://command-center-server.onrender.com/api/data';
 
 export default function Home() {
   const [items, setItems] = useState([]);
-  const [activeTab, setActiveTab] = useState('all'); // הטאב הפעיל כרגע
   const [isModalOpen, setIsModalOpen] = useState(false);
   
   // נתוני טופס
-  const [newItemName, setNewItemName] = useState('');
-  const [newItemUrl, setNewItemUrl] = useState('');
-  const [newItemCategory, setNewItemCategory] = useState('general');
+  const [newTitle, setNewTitle] = useState('');
+  const [newUrl, setNewUrl] = useState('');
+  const [newSection, setNewSection] = useState('docs'); // docs, buttons, visuals
+  const [newImage, setNewImage] = useState('');
 
-  // רשימת הקטגוריות לטאבים
-  const categories = [
-    { id: 'all', label: 'הכל' },
-    { id: 'work', label: 'עבודה' },
-    { id: 'design', label: 'עיצוב' },
-    { id: 'social', label: 'חברתי' },
-    { id: 'docs', label: 'מסמכים' },
-  ];
+  // שליטה על "הצג עוד"
+  const [showAllDocs, setShowAllDocs] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -32,177 +24,136 @@ export default function Home() {
   const fetchData = async () => {
     try {
       const res = await fetch(API_URL);
-      if (res.ok) {
-        const data = await res.json();
-        setItems(data);
-      }
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    }
+      if (res.ok) setItems(await res.json());
+    } catch (error) { console.error(error); }
   };
 
-  // פונקציה להשגת אייקון אוטומטי (Favicon)
-  const getFavicon = (url) => {
+  // פונקציית עזר: חילוץ תמונה מיוטיוב או Favicon
+  const getImage = (url, customImage) => {
+    if (customImage) return customImage;
+    
+    // בדיקה אם זה יוטיוב
+    const youtubeRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+    const match = url.match(youtubeRegex);
+    if (match && match[1]) {
+      return `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg`;
+    }
+    
+    // ברירת מחדל: Favicon של גוגל
     try {
         const domain = new URL(url).hostname;
-        return `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
-    } catch (e) {
-        return '/globe.svg'; // אייקון ברירת מחדל אם הלינק שבור
+        return `https://www.google.com/s2/favicons?domain=${domain}&sz=256`;
+    } catch {
+        return '/globe.svg';
     }
   };
 
-  const handleAddItem = async (e) => {
-    e.preventDefault();
-    if (!newItemName || !newItemUrl) return;
-
-    let formattedUrl = newItemUrl;
-    if (!formattedUrl.startsWith('http')) {
-        formattedUrl = `https://${formattedUrl}`;
-    }
-
-    try {
-      const res = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-            title: newItemName, 
-            value: formattedUrl,
-            category: newItemCategory, // שולחים גם את הקטגוריה
-            type: 'link' 
-        }),
-      });
-
-      if (res.ok) {
-        await fetchData();
-        closeModal();
-      }
-    } catch (error) {
-      console.error('Error adding item:', error);
-    }
+  // פונקציית עזר: צבעים רנדומליים לכפתורים
+  const getRandomColor = () => {
+    const colors = ['#FF6B6B', '#4ECDC4', '#FFE66D', '#1A535C', '#FF9F1C', '#2EC4B6'];
+    return colors[Math.floor(Math.random() * colors.length)];
   };
 
-  const handleDeleteItem = async (e, id) => {
+  const handleAdd = async (e) => {
     e.preventDefault();
-    e.stopPropagation();
-    if(!confirm('למחוק את הפריט?')) return;
+    let formattedUrl = newUrl.startsWith('http') ? newUrl : `https://${newUrl}`;
+
+    await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+          title: newTitle, 
+          value: formattedUrl, 
+          section: newSection,
+          imageUrl: newImage
+      }),
+    });
     
-    // כאן צריך להוסיף בשרת תמיכה במחיקה אמיתית, כרגע זה רק ימחק מהמסך
-    // למדריך הבא נסדר את המחיקה בשרת
-    const newItems = items.filter(item => item._id !== id);
-    setItems(newItems);
+    setIsModalOpen(false);
+    fetchData();
+    setNewTitle(''); setNewUrl(''); setNewImage('');
   };
 
-  const openModal = () => {
-    setNewItemName('');
-    setNewItemUrl('');
-    setNewItemCategory('general');
-    setIsModalOpen(true);
-  }
+  const handleDelete = async (e, id) => {
+    e.preventDefault();
+    if(!confirm('למחוק?')) return;
+    // כאן צריך לממש מחיקה בשרת, כרגע נמחק לוקאלית
+    setItems(items.filter(i => i._id !== id));
+  };
 
-  const closeModal = () => setIsModalOpen(false);
-
-  // סינון הפריטים לפי הטאב שנבחר
-  const filteredItems = activeTab === 'all' 
-    ? items 
-    : items.filter(item => item.category === activeTab);
+  // --- סינון לפי סוגים ---
+  const docs = items.filter(i => i.section === 'docs');
+  const buttons = items.filter(i => i.section === 'buttons');
+  const visuals = items.filter(i => i.section === 'visuals');
 
   return (
     <main className={styles.main}>
       <header className={styles.header}>
-        <h1 className={styles.title}>COMMAND CENTER</h1>
-        <div style={{color: '#888'}}>Aviram Eldar</div>
+        <h1 className={styles.title}>מרכז שליטה</h1>
       </header>
 
-      {/* --- סרגל הטאבים --- */}
-      <div className={styles.tabsContainer}>
-        {categories.map(cat => (
-            <button 
-                key={cat.id}
-                className={`${styles.tab} ${activeTab === cat.id ? styles.activeTab : ''}`}
-                onClick={() => setActiveTab(cat.id)}
-            >
-                {cat.label}
-            </button>
+      {/* --- חלק 1: מסמכים וקישורים (רשימה) --- */}
+      <section className={styles.docsSection}>
+        <h3 style={{color:'#888', marginBottom:'10px'}}>מסמכים וקישורים</h3>
+        {docs.slice(0, showAllDocs ? docs.length : 5).map(item => (
+            <a key={item._id} href={item.value} target="_blank" className={styles.docItem} style={{borderRightColor: getRandomColor()}}>
+                <span>{item.title}</span>
+                <button onClick={(e) => handleDelete(e, item._id)} style={{background:'none', border:'none', color:'#444', cursor:'pointer'}}>✕</button>
+            </a>
+        ))}
+        {docs.length > 5 && (
+            <div className={styles.showMoreBtn} onClick={() => setShowAllDocs(!showAllDocs)}>
+                {showAllDocs ? 'הצג פחות' : `הצג עוד ${docs.length - 5} פריטים...`}
+            </div>
+        )}
+      </section>
+
+      {/* --- חלק 2: כפתורים מהירים (Pills) --- */}
+      <div className={styles.buttonsGrid}>
+        {buttons.map(item => (
+            <a key={item._id} href={item.value} target="_blank" className={styles.pillButton} style={{borderColor: getRandomColor()}}>
+                {item.title}
+            </a>
         ))}
       </div>
 
-      <div className={styles.grid}>
-        {filteredItems.map((item) => (
-          <a 
-            key={item._id} 
-            href={item.value} 
-            target="_blank" 
-            rel="noopener noreferrer" 
-            className={styles.card}
-          >
-            {/* אייקון אוטומטי */}
-            <img 
-                src={getFavicon(item.value)} 
-                alt="icon" 
-                className={styles.cardIcon}
-                onError={(e) => e.target.style.display = 'none'} 
-            />
-            
-            <div className={styles.cardTitle}>{item.title}</div>
-            <div style={{fontSize: '0.8rem', color: '#666', marginTop: '5px'}}>{item.category || 'general'}</div>
-            
-            <button className={styles.deleteBtn} onClick={(e) => handleDeleteItem(e, item._id)}>✕</button>
-          </a>
-        ))}
+      <div className={styles.divider}></div>
 
-        {/* כפתור הוספה */}
-        <div className={`${styles.card} ${styles.addCard}`} onClick={openModal}>+</div>
+      {/* --- חלק 3: מועדפים ויזואליים (Youtube/Cards) --- */}
+      <div className={styles.visualsGrid}>
+        {visuals.map(item => (
+            <a key={item._id} href={item.value} target="_blank" className={styles.visualCard}>
+                <img src={getImage(item.value, item.imageUrl)} alt={item.title} className={styles.cardImage} />
+                <div className={styles.cardTitleOverlay}>{item.title}</div>
+                <button className={styles.deleteBtn} onClick={(e) => handleDelete(e, item._id)}>✕</button>
+            </a>
+        ))}
       </div>
 
-      {/* --- חלון הוספה משופר --- */}
+      {/* --- כפתור הוספה --- */}
+      <button className={styles.addBtn} onClick={() => setIsModalOpen(true)}>+</button>
+
+      {/* --- מודל הוספה --- */}
       {isModalOpen && (
-        <div className={styles.modalOverlay} onClick={(e) => { if(e.target === e.currentTarget) closeModal() }}>
-          <div className={styles.modal}>
-            <h2>הוספת קיצור דרך</h2>
-            <form onSubmit={handleAddItem}>
-              
-              <div className={styles.inputGroup}>
-                <label style={{color: '#888', fontSize: '0.9rem'}}>שם האתר</label>
-                <input 
-                  type="text" 
-                  className={styles.input}
-                  value={newItemName}
-                  onChange={(e) => setNewItemName(e.target.value)}
-                  autoFocus
-                />
-              </div>
+        <div className={styles.modalOverlay} onClick={(e) => e.target === e.currentTarget && setIsModalOpen(false)}>
+          <form className={styles.modal} onSubmit={handleAdd}>
+            <h2>הוספת פריט חדש</h2>
+            
+            <input placeholder="שם הפריט" value={newTitle} onChange={e=>setNewTitle(e.target.value)} className={styles.input} required />
+            <input placeholder="קישור (URL)" value={newUrl} onChange={e=>setNewUrl(e.target.value)} className={styles.input} required />
+            
+            <select value={newSection} onChange={e=>setNewSection(e.target.value)} className={styles.select}>
+                <option value="docs">קישור רגיל / מסמך (רשימה)</option>
+                <option value="buttons">כפתור מהיר (אמצע)</option>
+                <option value="visuals">כרטיסייה / יוטיוב (למטה)</option>
+            </select>
 
-              <div className={styles.inputGroup}>
-                <label style={{color: '#888', fontSize: '0.9rem'}}>כתובת (URL)</label>
-                <input 
-                  type="text" 
-                  className={styles.input}
-                  value={newItemUrl}
-                  onChange={(e) => setNewItemUrl(e.target.value)}
-                />
-              </div>
+            {newSection === 'visuals' && (
+                <input placeholder="לינק לתמונה (אופציונלי)" value={newImage} onChange={e=>setNewImage(e.target.value)} className={styles.input} />
+            )}
 
-              <div className={styles.inputGroup}>
-                <label style={{color: '#888', fontSize: '0.9rem'}}>קטגוריה</label>
-                <select 
-                    className={styles.input}
-                    value={newItemCategory}
-                    onChange={(e) => setNewItemCategory(e.target.value)}
-                >
-                    <option value="general">כללי</option>
-                    <option value="work">עבודה</option>
-                    <option value="design">עיצוב</option>
-                    <option value="social">חברתי</option>
-                    <option value="docs">מסמכים</option>
-                </select>
-              </div>
-
-              <div className={styles.modalButtons}>
-                <button type="button" onClick={closeModal} className={styles.btnSecondary}>ביטול</button>
-                <button type="submit" className={styles.btnPrimary}>שמור</button>
-              </div>
-            </form>
-          </div>
+            <button type="submit" style={{width:'100%', padding:'10px', background:'#007cf0', border:'none', color:'white', borderRadius:'5px', cursor:'pointer'}}>שמור</button>
+          </form>
         </div>
       )}
     </main>
