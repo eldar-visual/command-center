@@ -198,3 +198,19 @@
     width: 25px;
     height: 25px;
 }
+
+.btnDanger {
+  flex: 1;
+  padding: 12px;
+  border-radius: 8px;
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.2s;
+  background: #ff4444; /* אדום */
+  color: #fff;
+}
+
+.btnDanger:hover {
+  background: #cc0000;
+}
