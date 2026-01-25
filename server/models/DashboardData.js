@@ -1,16 +1,32 @@
+// server/models/DashboardData.js
 const mongoose = require('mongoose');
 
-const DashboardSchema = new mongoose.Schema({
-  title: { type: String, required: true },
-  value: { type: String, required: true }, // הלינק
-  section: { 
-    type: String, 
-    default: 'docs', 
-    enum: ['docs', 'buttons', 'visuals'] // שלושת האזורים: מסמכים, כפתורים צבעוניים, כרטיסיות
+const DashboardDataSchema = new mongoose.Schema({
+  title: {
+    type: String,
+    required: true
   },
-  imageUrl: { type: String }, // אופציונלי: תמונה שהמשתמש העלה
-  order: { type: Number, default: 0 }, // הכנה ל-Drag & Drop עתידי
-  createdAt: { type: Date, default: Date.now }
+  value: {
+    type: String,
+    required: true
+  },
+  section: {
+    type: String, // 'docs', 'buttons', 'visuals'
+    default: 'docs'
+  },
+  imageUrl: {
+    type: String,
+    default: ''
+  },
+  // --- זה השדה שהיה חסר ולכן הטאבים נעלמו ---
+  category: {
+    type: String,
+    default: 'כללי' 
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
 });
 
-module.exports = mongoose.model('DashboardData', DashboardSchema);
+module.exports = mongoose.model('DashboardData', DashboardDataSchema);
