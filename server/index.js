@@ -2,6 +2,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 require('dotenv').config();
+
 const DashboardData = require('./models/DashboardData');
 
 const app = express();
@@ -19,18 +20,17 @@ app.use((req, res, next) => {
 
 app.use(express.json());
 
-// --- בדיקת דופק (חדש!) ---
-// זה מאפשר לנו להיכנס לכתובת של השרת בדפדפן ולראות שהוא עובד
 app.get('/', (req, res) => {
     res.send('Server is up and running! 🚀');
 });
 
-// התחברות לדאטה-בייס
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('MongoDB Connected'))
   .catch(err => console.log('MongoDB Connection Error:', err));
 
 // --- נתיבים ---
+
+// 1. קבלת מידע
 app.get('/api/data', async (req, res) => {
   try {
     const items = await DashboardData.find().sort({ createdAt: -1 });
@@ -40,6 +40,7 @@ app.get('/api/data', async (req, res) => {
   }
 });
 
+// 2. הוספת פריט
 app.post('/api/data', async (req, res) => {
   try {
     const newItem = new DashboardData({
@@ -56,6 +57,18 @@ app.post('/api/data', async (req, res) => {
   }
 });
 
+// 3. עדכון פריט (חדש! - בשביל כפתור העריכה)
+app.put('/api/data/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updatedItem = await DashboardData.findByIdAndUpdate(id, req.body, { new: true });
+        res.json(updatedItem);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// 4. מחיקת פריט
 app.delete('/api/data/:id', async (req, res) => {
     try {
         const { id } = req.params;
