@@ -27,7 +27,7 @@ const API_URL = 'https://command-center-6pqx.onrender.com/api/data';
 const REORDER_URL = 'https://command-center-6pqx.onrender.com/api/data/reorder';
 const RENAME_TAB_URL = 'https://command-center-6pqx.onrender.com/api/tabs/rename';
 
-const APP_VERSION = "1.0.3"; 
+const APP_VERSION = "1.0.5"; 
 
 // --- רכיב עזר לפריט נגרר ---
 function SortableItem({ id, children, className, style, ...props }) {
@@ -63,7 +63,9 @@ export default function Home() {
   
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
-  const [contextMenu, setContextMenu] = useState(null);
+  
+  // Context Menu
+  const [contextMenu, setContextMenu] = useState(null); 
   
   // Tab Rename & Add
   const [isRenameTabModalOpen, setIsRenameTabModalOpen] = useState(false);
@@ -221,6 +223,7 @@ export default function Home() {
         await fetch(`${API_URL}/${itemToDelete}`, { method: 'DELETE' });
         await fetchData(); 
         setIsDeleteModalOpen(false);
+        if (isModalOpen) setIsModalOpen(false);
     } catch (error) { console.error(error); }
   };
 
@@ -237,15 +240,22 @@ export default function Home() {
       }
   };
 
-  const handleTabContextMenu = (e, tab) => {
+  // --- טיפול בקליק ימני ---
+  const handleContextMenu = (e, type, target) => {
       e.preventDefault();
-      setContextMenu({ x: e.pageX, y: e.pageY, targetName: tab });
+      e.stopPropagation(); 
+      setContextMenu({ 
+          x: e.pageX, 
+          y: e.pageY, 
+          type, 
+          target 
+      });
   };
   
   const openRenameTabModal = () => {
-      if (!contextMenu?.targetName) return;
-      setTabToRename(contextMenu.targetName);
-      setNewNameForTab(contextMenu.targetName);
+      if (!contextMenu?.target) return;
+      setTabToRename(contextMenu.target);
+      setNewNameForTab(contextMenu.target);
       setIsRenameTabModalOpen(true);
       setContextMenu(null);
   };
@@ -268,13 +278,28 @@ export default function Home() {
   };
   
   const deleteTab = () => {
-      if (!contextMenu?.targetName) return;
-      const tabToDelete = contextMenu.targetName;
+      if (!contextMenu?.target) return;
+      const tabToDelete = contextMenu.target;
       const newTabs = tabs.filter(t => t !== tabToDelete);
       setTabs(newTabs);
       localStorage.setItem('tabsOrder', JSON.stringify(newTabs));
       if (activeTab === tabToDelete) setActiveTab(newTabs[0] || '');
       setContextMenu(null);
+  };
+
+  const deleteItemFromMenu = () => {
+      if (contextMenu?.type === 'item') {
+          setItemToDelete(contextMenu.target._id);
+          setIsDeleteModalOpen(true);
+          setContextMenu(null);
+      }
+  };
+
+  const editItemFromMenu = () => {
+      if (contextMenu?.type === 'item') {
+          openEditModal(contextMenu.target);
+          setContextMenu(null);
+      }
   };
 
   const getImage = (url, customImage) => {
@@ -316,7 +341,11 @@ export default function Home() {
                     return (
                         <SortableItem key={tab} id={tab} className={`${styles.tab} ${isActive ? styles.activeTab : ''}`} 
                                       style={isActive ? { borderColor: tabColor, color: '#fff' } : {}}>
-                            <div onClick={() => setActiveTab(tab)} onContextMenu={(e) => handleTabContextMenu(e, tab)} style={{width:'100%', height:'100%'}}>
+                            <div 
+                                onClick={() => setActiveTab(tab)} 
+                                onContextMenu={(e) => handleContextMenu(e, 'tab', tab)}
+                                style={{width:'100%', height:'100%'}}
+                            >
                                 {tab}
                             </div>
                         </SortableItem>
@@ -371,7 +400,8 @@ export default function Home() {
                             id={item._id} 
                             className={styles.quickBtn} 
                             style={{borderColor: borderColor, cursor: 'pointer'}} 
-                            onClick={() => window.open(item.value, '_blank')} 
+                            onClick={() => window.open(item.value, '_blank')}
+                            onContextMenu={(e) => handleContextMenu(e, 'item', item)}
                         >
                              <img src={getImage(item.value)} style={{width:16, height:16, borderRadius:'50%'}} alt="" />
                              {item.title}
@@ -388,7 +418,6 @@ export default function Home() {
                     );
                 })}
             </SortableContext>
-            {/* הנה השינוי - הגבלה ל-6 פריטים בלבד */}
             {quickAccessItems.length < 6 && <button className={styles.addQuickBtn} onClick={() => openAddModal('buttons')}><Plus size={20} /></button>}
         </div>
 
@@ -396,7 +425,12 @@ export default function Home() {
         <div className={styles.visualsGrid}>
             <SortableContext items={currentTabVisuals.map(i => i._id)} strategy={rectSortingStrategy}>
                 {currentTabVisuals.map(item => (
-                    <SortableItem key={item._id} id={item._id} style={{position:'relative'}}>
+                    <SortableItem 
+                        key={item._id} 
+                        id={item._id} 
+                        style={{position:'relative'}}
+                        onContextMenu={(e) => handleContextMenu(e, 'item', item)} // הוספנו קליק ימני גם כאן!
+                    >
                          <a href={item.value} target="_blank" className={styles.visualCard}>
                             <img src={getImage(item.value, item.imageUrl)} className={styles.visualImg} alt={item.title} />
                             <div className={styles.visualTitle}>{item.title}</div>
@@ -440,6 +474,11 @@ export default function Home() {
             )}
 
             <div className={styles.modalButtons}>
+                {editingItemId && (
+                     <button type="button" onClick={() => { setItemToDelete(editingItemId); setIsDeleteModalOpen(true); }} className={styles.btnDanger} style={{flex: '0 0 auto', marginRight: '10px'}}>
+                        <Trash2 size={18} />
+                     </button>
+                )}
                 <button type="button" onClick={() => setIsModalOpen(false)} className={styles.btnSecondary}>ביטול</button>
                 <button type="submit" className={styles.btnPrimary}>שמור</button>
             </div>
@@ -474,8 +513,18 @@ export default function Home() {
 
       {contextMenu && (
           <div className={styles.contextMenu} style={{ top: contextMenu.y, left: contextMenu.x }}>
-              <div className={styles.contextMenuItem} onClick={openRenameTabModal}><Pencil size={14} /> שנה שם</div>
-              <div className={`${styles.contextMenuItem} ${styles.deleteItem}`} onClick={deleteTab}><Trash2 size={14} /> מחק טאב</div>
+              {contextMenu.type === 'tab' && (
+                  <>
+                    <div className={styles.contextMenuItem} onClick={openRenameTabModal}><Pencil size={14} /> שנה שם</div>
+                    <div className={`${styles.contextMenuItem} ${styles.deleteItem}`} onClick={deleteTab}><Trash2 size={14} /> מחק טאב</div>
+                  </>
+              )}
+              {contextMenu.type === 'item' && (
+                  <>
+                     <div className={styles.contextMenuItem} onClick={editItemFromMenu}><Edit2 size={14} /> ערוך</div>
+                     <div className={`${styles.contextMenuItem} ${styles.deleteItem}`} onClick={deleteItemFromMenu}><Trash2 size={14} /> מחק</div>
+                  </>
+              )}
           </div>
       )}
 
