@@ -27,7 +27,7 @@ const API_URL = 'https://command-center-6pqx.onrender.com/api/data';
 const REORDER_URL = 'https://command-center-6pqx.onrender.com/api/data/reorder';
 const RENAME_TAB_URL = 'https://command-center-6pqx.onrender.com/api/tabs/rename';
 
-const APP_VERSION = "1.0.2"; 
+const APP_VERSION = "1.0.3"; 
 
 // --- רכיב עזר לפריט נגרר ---
 function SortableItem({ id, children, className, style, ...props }) {
@@ -93,7 +93,6 @@ export default function Home() {
         const sortedData = data.sort((a, b) => (a.order || 0) - (b.order || 0));
         setItems(sortedData);
 
-        // חישוב טאבים מתוך פריטי Docs וגם Visuals (כי עכשיו גם Visuals שייכים לטאבים)
         const tabItems = sortedData.filter(i => (i.section === 'docs' || i.section === 'visuals') || !i.section);
         const uniqueCategories = new Set(tabItems.map(i => i.category || 'כללי'));
         let calculatedTabs = Array.from(uniqueCategories).sort();
@@ -163,7 +162,6 @@ export default function Home() {
     if (!formData.value) return;
     let formattedUrl = formData.value.startsWith('http') ? formData.value : `https://${formData.value}`;
     
-    // אם לא נבחרה קטגוריה (כמו בגישה מהירה), נשתמש ב'כללי' או בטאב הנוכחי
     const categoryToSend = formData.category || (modalType === 'buttons' ? 'general' : activeTab);
     
     const payload = {
@@ -190,7 +188,6 @@ export default function Home() {
             await fetchData();
             setIsModalOpen(false);
             setEditingItemId(null);
-            // אם הוספנו פריט לטאב שעדיין לא קיים (וזה לא כפתור גלובלי)
             if (modalType !== 'buttons' && !tabs.includes(categoryToSend)) {
                 setActiveTab(categoryToSend);
             }
@@ -201,7 +198,6 @@ export default function Home() {
   const openAddModal = (type) => {
       setEditingItemId(null); 
       setModalType(type);
-      // אם אנחנו מוסיפים רשימה או מועדף ויזואלי - זה הולך לטאב הנוכחי. כפתורים הולכים לכללי.
       const defaultCategory = (type === 'docs' || type === 'visuals') ? (activeTab || 'כללי') : 'כללי';
       setFormData({ title: '', value: '', imageUrl: '', category: defaultCategory });
       setIsModalOpen(true);
@@ -293,13 +289,8 @@ export default function Home() {
     } catch { return '/globe.svg'; }
   };
 
-  // --- סינון הפריטים לפי הטאב הפעיל ---
   const currentTabItems = items.filter(i => i.section === 'docs' && (i.category === activeTab || (!i.category && activeTab === 'כללי')));
-  
-  // התיקון כאן: גם Visuals מסוננים עכשיו לפי טאב!
   const currentTabVisuals = items.filter(i => i.section === 'visuals' && (i.category === activeTab || (!i.category && activeTab === 'כללי')));
-  
-  // כפתורים נשארים גלובליים
   const quickAccessItems = items.filter(i => i.section === 'buttons');
 
   return (
@@ -397,7 +388,8 @@ export default function Home() {
                     );
                 })}
             </SortableContext>
-            {quickAccessItems.length < 8 && <button className={styles.addQuickBtn} onClick={() => openAddModal('buttons')}><Plus size={20} /></button>}
+            {/* הנה השינוי - הגבלה ל-6 פריטים בלבד */}
+            {quickAccessItems.length < 6 && <button className={styles.addQuickBtn} onClick={() => openAddModal('buttons')}><Plus size={20} /></button>}
         </div>
 
         {/* --- Visuals (Tab Specific) --- */}
@@ -418,7 +410,7 @@ export default function Home() {
 
       </DndContext>
 
-      {/* --- Modals (ללא שינוי, למעט זה שעכשיו Visuals יקבלו את הקטגוריה) --- */}
+      {/* --- Modals --- */}
       {isModalOpen && (
         <div className={styles.modalOverlay} onClick={(e) => e.target === e.currentTarget && setIsModalOpen(false)}>
           <form className={styles.modal} onSubmit={handleSave}>
@@ -455,7 +447,6 @@ export default function Home() {
         </div>
       )}
       
-       {/* (שאר המודלים... זהים לקודם) */}
        {isRenameTabModalOpen && (
         <div className={styles.modalOverlay} onClick={(e) => e.target === e.currentTarget && setIsRenameTabModalOpen(false)}>
           <form className={styles.modal} onSubmit={handleRenameTabSubmit}>
