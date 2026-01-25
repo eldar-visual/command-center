@@ -2,19 +2,15 @@
 const express = require('express');
 const mongoose = require('mongoose');
 require('dotenv').config();
-
 const DashboardData = require('./models/DashboardData');
 
 const app = express();
 
-// --- פתרון CORS ידני (בלי ספריות) ---
-// זה מוסיף את הכותרות הדרושות לכל תשובה שהשרת שולח
+// --- פתרון CORS ידני ---
 app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*"); // מאפשר גישה לכולם
+  res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
-  
-  // אם הדפדפן שואל "האם מותר?" (בקשת OPTIONS) - ענה מיד "כן"
   if (req.method === "OPTIONS") {
      return res.sendStatus(200);
   }
@@ -23,13 +19,18 @@ app.use((req, res, next) => {
 
 app.use(express.json());
 
+// --- בדיקת דופק (חדש!) ---
+// זה מאפשר לנו להיכנס לכתובת של השרת בדפדפן ולראות שהוא עובד
+app.get('/', (req, res) => {
+    res.send('Server is up and running! 🚀');
+});
+
 // התחברות לדאטה-בייס
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('MongoDB Connected'))
   .catch(err => console.log('MongoDB Connection Error:', err));
 
 // --- נתיבים ---
-
 app.get('/api/data', async (req, res) => {
   try {
     const items = await DashboardData.find().sort({ createdAt: -1 });
