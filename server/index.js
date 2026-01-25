@@ -1,16 +1,16 @@
 // server/index.js
 const express = require('express');
 const mongoose = require('mongoose');
-const cors = require('cors'); // חייב להיות קיים
+const cors = require('cors'); // חובה
 require('dotenv').config();
 
 const DashboardData = require('./models/DashboardData');
 
 const app = express();
 
-// --- תיקון ה-CORS: פתיחת שערים ---
+// --- כאן התיקון: פתיחת גישה לכולם ---
 app.use(cors({
-    origin: '*', // מאפשר גישה מכל מקום (כולל Netlify)
+    origin: '*', 
     methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type']
 }));
@@ -22,9 +22,8 @@ mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('MongoDB Connected'))
   .catch(err => console.log('MongoDB Connection Error:', err));
 
-// --- נתיבים (Routes) ---
+// --- נתיבים ---
 
-// 1. קבלת כל הפריטים (GET)
 app.get('/api/data', async (req, res) => {
   try {
     const items = await DashboardData.find().sort({ createdAt: -1 });
@@ -34,7 +33,6 @@ app.get('/api/data', async (req, res) => {
   }
 });
 
-// 2. הוספת פריט חדש (POST)
 app.post('/api/data', async (req, res) => {
   try {
     const newItem = new DashboardData({
@@ -44,7 +42,6 @@ app.post('/api/data', async (req, res) => {
       imageUrl: req.body.imageUrl || '',
       category: req.body.category || 'general'
     });
-
     const savedItem = await newItem.save();
     res.json(savedItem);
   } catch (err) {
@@ -52,7 +49,6 @@ app.post('/api/data', async (req, res) => {
   }
 });
 
-// 3. מחיקת פריט (DELETE)
 app.delete('/api/data/:id', async (req, res) => {
     try {
         const { id } = req.params;
