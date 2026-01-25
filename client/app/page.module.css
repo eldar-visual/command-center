@@ -1,3 +1,4 @@
+/* client/app/page.module.css */
 .main {
   min-height: 100vh;
   background-color: #050505;
@@ -7,7 +8,7 @@
   flex-direction: column;
   align-items: center;
   padding: 2rem;
-  direction: rtl; /* חשוב לעברית */
+  direction: rtl;
 }
 
 .header {
@@ -23,7 +24,7 @@
   font-weight: 800;
 }
 
-/* --- אזור 1: מסמכים (רשימה) --- */
+/* --- רשימת מסמכים --- */
 .docsSection {
   width: 100%;
   max-width: 800px;
@@ -38,7 +39,7 @@
   background: rgba(255,255,255,0.03);
   margin-bottom: 8px;
   border-radius: 8px;
-  border-right: 4px solid #444; /* צבע ברירת מחדל */
+  border-right: 4px solid #444;
   transition: transform 0.2s;
   text-decoration: none;
   color: #fff;
@@ -58,7 +59,7 @@
   text-decoration: underline;
 }
 
-/* --- אזור 2: כפתורים (Buttons) --- */
+/* --- כפתורים (Pills) --- */
 .buttonsGrid {
   display: flex;
   flex-wrap: wrap;
@@ -75,7 +76,7 @@
   color: #fff;
   text-decoration: none;
   font-weight: bold;
-  border: 2px solid; /* הצבע יגיע מה-JS */
+  border: 2px solid;
   transition: 0.3s;
 }
 
@@ -92,7 +93,7 @@
   margin: 3rem 0;
 }
 
-/* --- אזור 3: מועדפים (Visuals) --- */
+/* --- ויזואלי (כרטיסיות) --- */
 .visualsGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -133,7 +134,7 @@
   text-align: center;
 }
 
-/* --- כפתור הוספה כללי --- */
+/* --- כפתור הוספה (+) --- */
 .addBtn {
   position: fixed;
   bottom: 30px;
@@ -153,7 +154,7 @@
   z-index: 100;
 }
 
-/* Modal */
+/* --- חלונות קופצים (Modal) --- */
 .modalOverlay {
   position: fixed;
   top: 0;
@@ -174,16 +175,18 @@
   width: 90%;
   max-width: 400px;
   text-align: right;
+  border: 1px solid #333;
 }
 
 .input, .select {
   width: 100%;
-  padding: 10px;
-  margin-bottom: 10px;
+  padding: 12px;
+  margin-bottom: 15px;
   background: #333;
   border: 1px solid #444;
   color: white;
-  border-radius: 5px;
+  border-radius: 6px;
+  font-size: 1rem;
 }
 
 .deleteBtn {
@@ -199,19 +202,57 @@
     height: 25px;
 }
 
-.btnDanger {
-  flex: 1;
+/* --- כפתורי פעולה במודל (החלק שהיה חסר) --- */
+.modalButtons {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.btnPrimary {
+  background: #007cf0; /* כחול לשמירה */
+  color: white;
   padding: 12px;
-  border-radius: 8px;
   border: none;
-  font-weight: bold;
+  border-radius: 6px;
   cursor: pointer;
+  font-weight: bold;
+  flex: 1;
   transition: 0.2s;
-  background: #ff4444; /* אדום */
-  color: #fff;
+}
+
+.btnPrimary:hover {
+  background: #005bb5;
+}
+
+.btnSecondary {
+  background: #333; /* אפור לביטול */
+  color: white;
+  padding: 12px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  flex: 1;
+  transition: 0.2s;
+}
+
+.btnSecondary:hover {
+  background: #555;
+}
+
+.btnDanger {
+  background: #ff4444; /* אדום למחיקה */
+  color: white;
+  padding: 12px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  flex: 1;
+  transition: 0.2s;
 }
           
 .btnDanger:hover {
   background: #cc0000;
 }
-    
