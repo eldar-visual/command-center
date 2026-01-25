@@ -65,8 +65,8 @@
 /* --- השינוי בכותרת --- */
 .title {
   font-family: 'Rubik', sans-serif; /* הפונט החדש */
-  font-weight: 900; /* משקל כבד מאוד */
-  font-size: 4.5rem; /* גודל מרשים */
+  font-weight: 800; /* משקל כבד מאוד */
+  font-size: 4rem; /* גודל מרשים */
   
   /* גרדיינט אפור מטאלי (10% עד 30%) */
   background: linear-gradient(180deg, #f3f4f6 0%, #9ca3af 100%);
