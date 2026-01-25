@@ -27,18 +27,16 @@ const API_URL = 'https://command-center-6pqx.onrender.com/api/data';
 const REORDER_URL = 'https://command-center-6pqx.onrender.com/api/data/reorder';
 const RENAME_TAB_URL = 'https://command-center-6pqx.onrender.com/api/tabs/rename';
 
-const APP_VERSION = "1.0.1"; // עדכון גרסה קטן לתיקון הקישורים
+const APP_VERSION = "1.0.2"; 
 
-// --- רכיב עזר לפריט נגרר (מתוקן - מקבל props כמו onClick) ---
+// --- רכיב עזר לפריט נגרר ---
 function SortableItem({ id, children, className, style, ...props }) {
     const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
-    
     const dndStyle = {
         transform: CSS.Transform.toString(transform),
         transition,
         ...style
     };
-
     return (
         <div ref={setNodeRef} style={dndStyle} {...attributes} {...listeners} className={className} {...props}>
             {children}
@@ -46,7 +44,6 @@ function SortableItem({ id, children, className, style, ...props }) {
     );
 }
 
-// פלטת צבעי פסטל
 const pastelColors = ['#fca5a5', '#fdba74', '#fde047', '#86efac', '#67e8f9', '#93c5fd', '#c4b5fd', '#f9a8d4'];
 const getRandomPastel = (id) => {
     const index = id.length % pastelColors.length;
@@ -96,8 +93,9 @@ export default function Home() {
         const sortedData = data.sort((a, b) => (a.order || 0) - (b.order || 0));
         setItems(sortedData);
 
-        const docItems = sortedData.filter(i => i.section === 'docs' || !i.section);
-        const uniqueCategories = new Set(docItems.map(i => i.category || 'כללי'));
+        // חישוב טאבים מתוך פריטי Docs וגם Visuals (כי עכשיו גם Visuals שייכים לטאבים)
+        const tabItems = sortedData.filter(i => (i.section === 'docs' || i.section === 'visuals') || !i.section);
+        const uniqueCategories = new Set(tabItems.map(i => i.category || 'כללי'));
         let calculatedTabs = Array.from(uniqueCategories).sort();
 
         const savedTabOrder = localStorage.getItem('tabsOrder');
@@ -164,7 +162,10 @@ export default function Home() {
     e.preventDefault();
     if (!formData.value) return;
     let formattedUrl = formData.value.startsWith('http') ? formData.value : `https://${formData.value}`;
-    const categoryToSend = formData.category || 'כללי';
+    
+    // אם לא נבחרה קטגוריה (כמו בגישה מהירה), נשתמש ב'כללי' או בטאב הנוכחי
+    const categoryToSend = formData.category || (modalType === 'buttons' ? 'general' : activeTab);
+    
     const payload = {
       title: formData.title,
       value: formattedUrl,
@@ -189,7 +190,10 @@ export default function Home() {
             await fetchData();
             setIsModalOpen(false);
             setEditingItemId(null);
-            if (!tabs.includes(categoryToSend) && modalType === 'docs') setActiveTab(categoryToSend);
+            // אם הוספנו פריט לטאב שעדיין לא קיים (וזה לא כפתור גלובלי)
+            if (modalType !== 'buttons' && !tabs.includes(categoryToSend)) {
+                setActiveTab(categoryToSend);
+            }
         }
     } catch (e) { console.error(e); }
   };
@@ -197,7 +201,8 @@ export default function Home() {
   const openAddModal = (type) => {
       setEditingItemId(null); 
       setModalType(type);
-      const defaultCategory = type === 'docs' ? (activeTab || 'כללי') : 'כללי';
+      // אם אנחנו מוסיפים רשימה או מועדף ויזואלי - זה הולך לטאב הנוכחי. כפתורים הולכים לכללי.
+      const defaultCategory = (type === 'docs' || type === 'visuals') ? (activeTab || 'כללי') : 'כללי';
       setFormData({ title: '', value: '', imageUrl: '', category: defaultCategory });
       setIsModalOpen(true);
   };
@@ -288,9 +293,14 @@ export default function Home() {
     } catch { return '/globe.svg'; }
   };
 
+  // --- סינון הפריטים לפי הטאב הפעיל ---
   const currentTabItems = items.filter(i => i.section === 'docs' && (i.category === activeTab || (!i.category && activeTab === 'כללי')));
+  
+  // התיקון כאן: גם Visuals מסוננים עכשיו לפי טאב!
+  const currentTabVisuals = items.filter(i => i.section === 'visuals' && (i.category === activeTab || (!i.category && activeTab === 'כללי')));
+  
+  // כפתורים נשארים גלובליים
   const quickAccessItems = items.filter(i => i.section === 'buttons');
-  const visualsItems = items.filter(i => i.section === 'visuals');
 
   return (
     <main className={styles.main}>
@@ -359,7 +369,7 @@ export default function Home() {
 
         <div className={styles.divider}></div>
 
-        {/* --- Quick Access (התיקון: onClick על הקופסה) --- */}
+        {/* --- Quick Access (Global) --- */}
         <div className={styles.quickAccessContainer}>
             <SortableContext items={quickAccessItems.map(i => i._id)} strategy={rectSortingStrategy}>
                 {quickAccessItems.map(item => {
@@ -369,8 +379,8 @@ export default function Home() {
                             key={item._id} 
                             id={item._id} 
                             className={styles.quickBtn} 
-                            style={{borderColor: borderColor, cursor: 'pointer'}} // הוספת סמן יד
-                            onClick={() => window.open(item.value, '_blank')} // הלחיצה פותחת את הקישור
+                            style={{borderColor: borderColor, cursor: 'pointer'}} 
+                            onClick={() => window.open(item.value, '_blank')} 
                         >
                              <img src={getImage(item.value)} style={{width:16, height:16, borderRadius:'50%'}} alt="" />
                              {item.title}
@@ -378,7 +388,7 @@ export default function Home() {
                                 style={{marginLeft:'5px', background:'none', border:'none', cursor:'pointer', color:'#64748b', fontSize:'0.8rem'}} 
                                 onClick={(e) => { 
                                     e.preventDefault(); 
-                                    e.stopPropagation(); // מונע את פתיחת הקישור כשלוחצים על עריכה
+                                    e.stopPropagation(); 
                                     openEditModal(item); 
                                 }}>
                                 ✎
@@ -390,10 +400,10 @@ export default function Home() {
             {quickAccessItems.length < 8 && <button className={styles.addQuickBtn} onClick={() => openAddModal('buttons')}><Plus size={20} /></button>}
         </div>
 
-        {/* --- Visuals --- */}
+        {/* --- Visuals (Tab Specific) --- */}
         <div className={styles.visualsGrid}>
-            <SortableContext items={visualsItems.map(i => i._id)} strategy={rectSortingStrategy}>
-                {visualsItems.map(item => (
+            <SortableContext items={currentTabVisuals.map(i => i._id)} strategy={rectSortingStrategy}>
+                {currentTabVisuals.map(item => (
                     <SortableItem key={item._id} id={item._id} style={{position:'relative'}}>
                          <a href={item.value} target="_blank" className={styles.visualCard}>
                             <img src={getImage(item.value, item.imageUrl)} className={styles.visualImg} alt={item.title} />
@@ -408,7 +418,7 @@ export default function Home() {
 
       </DndContext>
 
-      {/* --- Modals --- */}
+      {/* --- Modals (ללא שינוי, למעט זה שעכשיו Visuals יקבלו את הקטגוריה) --- */}
       {isModalOpen && (
         <div className={styles.modalOverlay} onClick={(e) => e.target === e.currentTarget && setIsModalOpen(false)}>
           <form className={styles.modal} onSubmit={handleSave}>
@@ -417,7 +427,7 @@ export default function Home() {
             <input value={formData.title} onChange={e=>setFormData({...formData, title: e.target.value})} className={styles.input} placeholder="כותרת" required />
             <input value={formData.value} onChange={e=>setFormData({...formData, value: e.target.value})} className={styles.input} placeholder="URL" required />
             
-            {modalType === 'docs' && (
+            {(modalType === 'docs' || modalType === 'visuals') && (
                 <select value={formData.category} onChange={e=>setFormData({...formData, category: e.target.value})} className={styles.select}>
                     {tabs.map(tab => <option key={tab} value={tab}>{tab}</option>)}
                     <option value={newTabName || 'חדש...'}>+ טאב חדש...</option>
@@ -445,6 +455,7 @@ export default function Home() {
         </div>
       )}
       
+       {/* (שאר המודלים... זהים לקודם) */}
        {isRenameTabModalOpen && (
         <div className={styles.modalOverlay} onClick={(e) => e.target === e.currentTarget && setIsRenameTabModalOpen(false)}>
           <form className={styles.modal} onSubmit={handleRenameTabSubmit}>

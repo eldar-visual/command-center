@@ -1,16 +1,12 @@
 /* client/app/page.module.css */
 
-/* 1. ייבוא כל המשקלים של Rubik מגוגל */
 @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700;900&display=swap');
 
 .main {
   min-height: 100vh;
-  background-color: #0f111a; /* רקע כהה עמוק */
+  background-color: #0f111a;
   color: #e2e8f0;
-  
-  /* הגדרת הפונט לכל האפליקציה */
   font-family: 'Rubik', sans-serif;
-  
   display: flex;
   flex-direction: column;
   padding: 2rem;
@@ -25,6 +21,10 @@
   justify-content: center;
   margin-bottom: 2rem;
   position: relative;
+  /* גם את הכותרת נמרכז ביחס לרוחב החדש */
+  max-width: 1400px;
+  width: 100%;
+  margin-inline: auto;
 }
 
 .infoIconWrapper {
@@ -66,22 +66,15 @@
   transform: translateY(0);
 }
 
-/* --- הכותרת המעוצבת החדשה --- */
 .title {
-  font-weight: 800; /* משקל כבד מאוד (Black) */
-  font-size: 4rem;
-  
-  /* גרדיינט אפור מטאלי (10% עד 30%) */
+  font-weight: 900;
+  font-size: 4.5rem;
   background: linear-gradient(180deg, #f3f4f6 0%, #9ca3af 100%);
-  
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  
   margin: 0;
   letter-spacing: -2px;
-  
-  /* צל עדין להבלטה */
   filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5));
 }
 
@@ -93,8 +86,12 @@
   margin-bottom: 20px;
   overflow-x: auto;
   padding-bottom: 10px;
-  /* גלילה נעימה ללא פס גלילה מכוער */
-  scrollbar-width: none; 
+  scrollbar-width: none;
+  
+  /* יישור למרכז והגבלת רוחב */
+  max-width: 1400px;
+  width: 100%;
+  margin-inline: auto;
 }
 
 .tabsContainer::-webkit-scrollbar {
@@ -122,7 +119,6 @@
 
 .activeTab {
   color: #fff;
-  /* הצבע של הגבול התחתון מטופל דרך ה-JS */
 }
 
 .addTabBtn {
@@ -158,7 +154,7 @@
     font-family: inherit;
 }
 
-/* --- Main Content Area --- */
+/* --- Main Content Area (הרשימה הארוכה) --- */
 .contentArea {
   background: #151923;
   border-radius: 16px;
@@ -166,6 +162,11 @@
   min-height: 300px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   margin-bottom: 2rem;
+  
+  /* --- התיקון לרוחב --- */
+  max-width: 1400px;
+  width: 100%;       /* תופס את כל הרוחב עד המקסימום */
+  margin-inline: auto; /* מירכוז */
 }
 
 .sectionHeader {
@@ -231,7 +232,7 @@
 .itemActions {
   display: flex;
   gap: 10px;
-  opacity: 0; /* מוסתר עד שעוברים עם העכבר */
+  opacity: 0;
   transition: 0.2s;
 }
 
@@ -263,8 +264,9 @@
   height: 1px;
   background: #334155;
   width: 100%;
-  margin: 3rem 0;
+  margin: 3rem auto; /* מירכוז */
   opacity: 0.5;
+  max-width: 1400px; /* גם לקו המפריד */
 }
 
 /* --- Quick Access (Buttons) --- */
@@ -274,6 +276,9 @@
   flex-wrap: wrap;
   gap: 15px;
   margin-bottom: 3rem;
+  /* מקסימום רוחב גם כאן לשמירה על אחידות */
+  max-width: 1400px;
+  margin-inline: auto;
 }
 
 .quickBtn {
@@ -288,7 +293,6 @@
   align-items: center;
   gap: 8px;
   transition: 0.2s;
-  /* חשוב לגרירה: */
   touch-action: none; 
 }
 
@@ -323,6 +327,11 @@
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 20px;
   padding-bottom: 50px;
+  
+  /* יישור למרכז והגבלת רוחב - כמו הרשימה */
+  max-width: 1400px;
+  width: 100%;
+  margin-inline: auto;
 }
 
 .visualCard {
@@ -331,7 +340,7 @@
   overflow: hidden;
   position: relative;
   display: flex;
-  flex-direction: column; /* תמונה מעל טקסט */
+  flex-direction: column;
   transition: 0.3s;
   border: 1px solid transparent;
   cursor: pointer;
@@ -352,7 +361,6 @@
   display: block;
 }
 
-/* הכותרת הלבנה מתחת לתמונה */
 .visualTitle {
   padding: 12px 15px;
   font-size: 0.95rem;
@@ -363,7 +371,7 @@
   border-top: 1px solid rgba(255,255,255,0.05);
 }
 
-/* --- Modals --- */
+/* Modals */
 .modalOverlay {
   position: fixed;
   inset: 0;
@@ -418,7 +426,7 @@
 .btnDanger { background: #ef4444; color: white; padding: 10px; border-radius: 8px; border:none; flex:1; cursor:pointer; font-family: inherit; }
 .btnDanger:hover { background: #dc2626; }
 
-/* --- Context Menu (Right Click) --- */
+/* Context Menu */
 .contextMenu {
   position: fixed;
   background: #1e293b;
