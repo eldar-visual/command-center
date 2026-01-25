@@ -1,4 +1,4 @@
-ֿ// server/index.js
+// server/index.js
 const express = require('express');
 const mongoose = require('mongoose');
 require('dotenv').config();
