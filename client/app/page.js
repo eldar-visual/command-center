@@ -1,7 +1,8 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { 
-  Info, Plus, Trash2, Edit2, Link as LinkIcon, Pencil, Upload 
+  Info, Plus, Trash2, Edit2, Link as LinkIcon, Pencil, Upload, 
+  FileText, Table, Presentation // הוספנו אייקונים חדשים
 } from 'lucide-react'; 
 import { 
   DndContext, 
@@ -27,7 +28,7 @@ const API_URL = 'https://command-center-6pqx.onrender.com/api/data';
 const REORDER_URL = 'https://command-center-6pqx.onrender.com/api/data/reorder';
 const RENAME_TAB_URL = 'https://command-center-6pqx.onrender.com/api/tabs/rename';
 
-const APP_VERSION = "1.0.5"; 
+const APP_VERSION = "1.0.6"; 
 
 // --- רכיב עזר לפריט נגרר ---
 function SortableItem({ id, children, className, style, ...props }) {
@@ -240,7 +241,6 @@ export default function Home() {
       }
   };
 
-  // --- טיפול בקליק ימני ---
   const handleContextMenu = (e, type, target) => {
       e.preventDefault();
       e.stopPropagation(); 
@@ -314,6 +314,24 @@ export default function Home() {
     } catch { return '/globe.svg'; }
   };
 
+  // --- פונקציה חדשה: קביעת האייקון לפי הקישור ---
+  const getIcon = (url) => {
+      if (!url) return <LinkIcon size={16} color="#3b82f6" />;
+      
+      if (url.includes('docs.google.com/document')) {
+          return <FileText size={16} color="#4285F4" />; // כחול גוגל
+      }
+      if (url.includes('docs.google.com/spreadsheets')) {
+          return <Table size={16} color="#0F9D58" />; // ירוק גוגל
+      }
+      if (url.includes('docs.google.com/presentation')) {
+          return <Presentation size={16} color="#F4B400" />; // כתום גוגל
+      }
+      
+      // ברירת מחדל
+      return <LinkIcon size={16} color="#3b82f6" />;
+  };
+
   const currentTabItems = items.filter(i => i.section === 'docs' && (i.category === activeTab || (!i.category && activeTab === 'כללי')));
   const currentTabVisuals = items.filter(i => i.section === 'visuals' && (i.category === activeTab || (!i.category && activeTab === 'כללי')));
   const quickAccessItems = items.filter(i => i.section === 'buttons');
@@ -373,7 +391,10 @@ export default function Home() {
                         <SortableItem key={item._id} id={item._id} className={styles.itemRow}>
                             <div style={{display:'flex', alignItems:'center', gap:'15px', flex: 1}}>
                                 <span style={{cursor: 'grab', color: '#475569'}}>⋮⋮</span>
-                                <LinkIcon size={16} color="#3b82f6" />
+                                
+                                {/* כאן השתמשנו בפונקציה החדשה לאייקונים */}
+                                {getIcon(item.value)}
+                                
                                 <a href={item.value} target="_blank" style={{color:'inherit', textDecoration:'none', fontSize:'1.1rem'}}>{item.title}</a>
                             </div>
                             <div className={styles.itemActions}>
@@ -429,7 +450,7 @@ export default function Home() {
                         key={item._id} 
                         id={item._id} 
                         style={{position:'relative'}}
-                        onContextMenu={(e) => handleContextMenu(e, 'item', item)} // הוספנו קליק ימני גם כאן!
+                        onContextMenu={(e) => handleContextMenu(e, 'item', item)}
                     >
                          <a href={item.value} target="_blank" className={styles.visualCard}>
                             <img src={getImage(item.value, item.imageUrl)} className={styles.visualImg} alt={item.title} />
@@ -444,7 +465,7 @@ export default function Home() {
 
       </DndContext>
 
-      {/* --- Modals --- */}
+      {/* --- Modals (כל הקוד נשאר ללא שינוי...) --- */}
       {isModalOpen && (
         <div className={styles.modalOverlay} onClick={(e) => e.target === e.currentTarget && setIsModalOpen(false)}>
           <form className={styles.modal} onSubmit={handleSave}>
