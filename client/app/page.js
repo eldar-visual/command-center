@@ -3,15 +3,15 @@ import { useState, useEffect } from 'react';
 import { Info, Plus, Trash2, Edit2, Link as LinkIcon } from 'lucide-react'; 
 import styles from './page.module.css';
 
-// וודא שזו הכתובת הנכונה לשרת שלך ב-RENDER
+// הכתובת לשרת
 const API_URL = 'https://command-center-6pqx.onrender.com/api/data';
 
 export default function Home() {
   const [items, setItems] = useState([]);
   
-  // טאבים
-  const [tabs, setTabs] = useState(['כללי']); 
-  const [activeTab, setActiveTab] = useState('כללי');
+  // תיקון 1: מתחילים עם מערך ריק, לא מכריחים את 'כללי'
+  const [tabs, setTabs] = useState([]); 
+  const [activeTab, setActiveTab] = useState('');
   const [isAddingTab, setIsAddingTab] = useState(false);
   const [newTabName, setNewTabName] = useState('');
 
@@ -19,9 +19,8 @@ export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalType, setModalType] = useState('docs'); 
   
-  // State לעריכה ושמירה
-  const [editingItemId, setEditingItemId] = useState(null); // אם יש ID, אנחנו במצב עריכה
-  const [formData, setFormData] = useState({ title: '', value: '', imageUrl: '', category: 'כללי' });
+  const [editingItemId, setEditingItemId] = useState(null); 
+  const [formData, setFormData] = useState({ title: '', value: '', imageUrl: '', category: '' });
   
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
@@ -41,63 +40,78 @@ export default function Home() {
       if (res.ok) {
         const data = await res.json();
         setItems(data);
-        // עדכון רשימת הטאבים מהמידע הקיים
-        const existingCategories = new Set(data.map(i => i.category).filter(c => c && c !== 'general'));
-        setTabs(['כללי', ...Array.from(existingCategories)]);
+
+        // --- התיקון הגדול ---
+        // 1. לוקחים רק פריטים ששייכים לרשימות (docs)
+        const docItems = data.filter(i => i.section === 'docs' || !i.section);
+        
+        // 2. בונים רשימת קטגוריות *רק* ממה שקיים בנתונים בפועל
+        // (אם לפריט אין קטגוריה, הוא מקבל 'כללי' כברירת מחדל מהשרת, אז זה יופיע כאן)
+        const uniqueCategories = new Set(docItems.map(i => i.category || 'כללי'));
+        
+        // 3. ממירים למערך וממיינים
+        const calculatedTabs = Array.from(uniqueCategories).sort();
+        
+        setTabs(calculatedTabs);
+
+        // 4. ניהול הטאב הפעיל בצורה חכמה
+        setActiveTab(prev => {
+            // אם הטאב שהיינו בו עדיין קיים - נשארים בו
+            if (calculatedTabs.includes(prev)) return prev;
+            // אחרת - הולכים לראשון, ואם אין כלום אז כלום
+            return calculatedTabs.length > 0 ? calculatedTabs[0] : '';
+        });
       }
     } catch (error) { console.error("Error:", error); }
   };
 
-  // --- פתיחת מודל להוספה חדשה ---
   const openAddModal = (type) => {
-      setEditingItemId(null); // איפוס מצב עריכה
+      setEditingItemId(null); 
       setModalType(type);
-      // ברירת מחדל: הטאב הנוכחי (אם זה מסמך)
-      const defaultCategory = type === 'docs' ? activeTab : 'כללי';
+      // אם יש טאב פעיל - הפריט החדש ילך אליו. אם אין טאבים בכלל - ברירת מחדל 'כללי'
+      const defaultCategory = type === 'docs' ? (activeTab || 'כללי') : 'כללי';
       setFormData({ title: '', value: '', imageUrl: '', category: defaultCategory });
       setIsModalOpen(true);
   };
 
-  // --- פתיחת מודל לעריכה (התיקון הגדול) ---
   const openEditModal = (item) => {
-      setEditingItemId(item._id); // סימון שאנחנו עורכים את הפריט הזה
+      setEditingItemId(item._id);
       setModalType(item.section || 'docs');
       setFormData({
           title: item.title,
           value: item.value,
           imageUrl: item.imageUrl || '',
-          category: item.category || 'כללי' // טעינת הטאב הנוכחי של הפריט
+          category: item.category || 'כללי' 
       });
       setIsModalOpen(true);
   };
 
-  // --- שמירה (גם הוספה וגם עריכה) ---
   const handleSave = async (e) => {
     e.preventDefault();
     if (!formData.value) return;
 
     let formattedUrl = formData.value.startsWith('http') ? formData.value : `https://${formData.value}`;
     
-    // הכנת המידע לשליחה
+    // מוודאים שיש קטגוריה (אם המשתמש מחק בטעות)
+    const categoryToSend = formData.category || 'כללי';
+
     const payload = {
       title: formData.title,
       value: formattedUrl,
       section: modalType === 'visuals' ? 'visuals' : modalType === 'buttons' ? 'buttons' : 'docs',
       imageUrl: formData.imageUrl,
-      category: formData.category // כאן נכנס הטאב שנבחר
+      category: categoryToSend
     };
 
     try {
         let res;
         if (editingItemId) {
-            // --- מצב עריכה (PUT) ---
             res = await fetch(`${API_URL}/${editingItemId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
             });
         } else {
-            // --- מצב הוספה חדשה (POST) ---
             res = await fetch(API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -109,24 +123,31 @@ export default function Home() {
             await fetchData();
             setIsModalOpen(false);
             setEditingItemId(null);
+            // אם יצרנו פריט בטאב חדש שעדיין לא קיים, נעבור אליו
+            if (!tabs.includes(categoryToSend) && modalType === 'docs') {
+                setActiveTab(categoryToSend);
+            }
         }
     } catch (e) { console.error(e); }
   };
 
-  // --- מחיקה ---
   const confirmDelete = async () => {
     if (!itemToDelete) return;
     try {
         await fetch(`${API_URL}/${itemToDelete}`, { method: 'DELETE' });
-        setItems(prev => prev.filter(i => i._id !== itemToDelete));
+        // אחרי מחיקה חייבים למשוך מחדש כדי לראות אם הטאב התרוקן ונעלם
+        await fetchData(); 
         setIsDeleteModalOpen(false);
     } catch (error) { console.error(error); }
   };
 
-  // --- טאבים ---
+  // הוספת טאב "וירטואלי" (עד שמוסיפים בו פריט)
   const handleAddTab = () => {
       if (newTabName.trim()) {
-          setTabs([...tabs, newTabName]);
+          // בודקים אם כבר קיים
+          if (!tabs.includes(newTabName)) {
+              setTabs([...tabs, newTabName]);
+          }
           setActiveTab(newTabName);
           setNewTabName('');
           setIsAddingTab(false);
@@ -135,15 +156,17 @@ export default function Home() {
 
   const handleTabContextMenu = (e, tab) => {
       e.preventDefault();
-      if (tab === 'כללי') return; 
+      // מאפשרים למחוק כל טאב (המחיקה רק מסתירה אותו ויזואלית אם הוא ריק, או תדרוש לוגיקה נוספת בהמשך)
       setContextMenu({ x: e.pageX, y: e.pageY, targetName: tab });
   };
 
+  // מחיקת טאב כרגע רק מסתירה אותו מהתצוגה הנוכחית
+  // (אם יש בו פריטים, הם יחזירו אותו בריענון הבא - זה מנגנון בטיחות)
   const deleteTab = () => {
       if (!contextMenu?.targetName) return;
       const tabToDelete = contextMenu.targetName;
       setTabs(tabs.filter(t => t !== tabToDelete));
-      if (activeTab === tabToDelete) setActiveTab('כללי');
+      if (activeTab === tabToDelete) setActiveTab(tabs[0] || '');
       setContextMenu(null);
   };
 
@@ -159,7 +182,6 @@ export default function Home() {
     } catch { return '/globe.svg'; }
   };
 
-  // פילטור
   const currentTabItems = items.filter(i => i.section === 'docs' && (i.category === activeTab || (!i.category && activeTab === 'כללי')));
   const quickAccessItems = items.filter(i => i.section === 'buttons');
   const visualsItems = items.filter(i => i.section === 'visuals');
@@ -170,7 +192,7 @@ export default function Home() {
       <div className={styles.headerWrapper}>
         <div className={styles.infoIconWrapper}>
             <Info size={24} />
-            <div className={styles.versionTooltip}>גרסה 1.0.3</div>
+            <div className={styles.versionTooltip}>גרסה 1.0.4</div>
         </div>
         <div style={{textAlign: 'center'}}>
             <h1 className={styles.title}>מרכז שליטה</h1>
@@ -205,14 +227,17 @@ export default function Home() {
       {/* --- Main List --- */}
       <section className={styles.contentArea}>
         <div className={styles.sectionHeader}>
-            <h2 className={styles.sectionTitle}>{activeTab}</h2>
+            {/* אם אין טאבים בכלל, מציגים כותרת ברירת מחדל */}
+            <h2 className={styles.sectionTitle}>{activeTab || 'רשימה'}</h2>
             <button className={styles.addItemBtn} onClick={() => openAddModal('docs')}>
                 <Plus size={18} /> פריט חדש
             </button>
         </div>
 
         <div className={styles.itemsList}>
-            {currentTabItems.length === 0 && <p style={{color:'#64748b', textAlign:'center'}}>אין פריטים בטאב זה.</p>}
+            {currentTabItems.length === 0 && <p style={{color:'#64748b', textAlign:'center'}}>
+                {tabs.length === 0 ? 'אין טאבים עדיין. לחץ על + ליצירת טאב חדש.' : 'הטאב ריק.'}
+            </p>}
             
             {currentTabItems.map(item => (
                 <div key={item._id} className={styles.itemRow}>
@@ -221,7 +246,6 @@ export default function Home() {
                         <a href={item.value} target="_blank" style={{color:'inherit', textDecoration:'none', fontSize:'1.1rem'}}>{item.title}</a>
                     </div>
                     <div className={styles.itemActions}>
-                        {/* כפתור עריכה - עכשיו פעיל! */}
                         <button className={styles.actionBtn} onClick={() => openEditModal(item)}><Edit2 size={16} /></button>
                         <button className={`${styles.actionBtn} ${styles.deleteAction}`} onClick={() => { setItemToDelete(item._id); setIsDeleteModalOpen(true); }}>
                             <Trash2 size={16} />
@@ -240,7 +264,10 @@ export default function Home() {
             <a key={item._id} href={item.value} target="_blank" className={styles.quickBtn}>
                 <img src={getImage(item.value)} style={{width:16, height:16, borderRadius:'50%'}} alt="" />
                 {item.title}
-                {/* כאן אפשר להוסיף כפתור עריכה קטן אם תרצה בעתיד */}
+                <button 
+                    style={{marginLeft:'5px', background:'none', border:'none', cursor:'pointer', color:'#64748b', fontSize:'0.8rem'}}
+                    onClick={(e) => { e.preventDefault(); openEditModal(item); }}
+                >✎</button>
             </a>
         ))}
         {quickAccessItems.length < 8 && (
@@ -256,7 +283,6 @@ export default function Home() {
                     <img src={getImage(item.value, item.imageUrl)} className={styles.visualImg} alt={item.title} />
                     <div className={styles.visualOverlay}>{item.title}</div>
                 </a>
-                {/* כפתור עריכה מוחבא שמופיע במעבר עכבר - אופציה לשדרוג */}
                 <button 
                     style={{position:'absolute', top:5, left:5, background:'rgba(0,0,0,0.6)', border:'none', borderRadius:'50%', padding:5, cursor:'pointer', color:'white', zIndex:10}}
                     onClick={(e) => { e.preventDefault(); openEditModal(item); }}
@@ -271,7 +297,7 @@ export default function Home() {
          </button>
       </div>
 
-      {/* --- Unified Modal (Add / Edit) --- */}
+      {/* --- Unified Modal --- */}
       {isModalOpen && (
         <div className={styles.modalOverlay} onClick={(e) => e.target === e.currentTarget && setIsModalOpen(false)}>
           <form className={styles.modal} onSubmit={handleSave}>
@@ -285,7 +311,6 @@ export default function Home() {
             <label style={{color:'#94a3b8', fontSize:'0.9rem'}}>כתובת (URL)</label>
             <input value={formData.value} onChange={e=>setFormData({...formData, value: e.target.value})} className={styles.input} required />
             
-            {/* שדה בחירת הטאב - להעברה בין קטגוריות */}
             {modalType === 'docs' && (
                 <>
                     <label style={{color:'#94a3b8', fontSize:'0.9rem'}}>בחירת טאב (קטגוריה)</label>
