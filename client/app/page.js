@@ -54,7 +54,7 @@ const stringToColor = (str) => {
 };
 
 // פלטת צבעי ניאון לטאבים ולכפתורים
-const neonColors = ['#ff00ff', '#00ffff', '#00ff00', '#ffff00', '#ff0000', '#3b82f6', '#8b5cf6', '#f43f5e'];
+const neonColors = ['#fca5a5', '#fdba74', '#fde047', '#86efac', '#67e8f9', '#93c5fd', '#c4b5fd', '#f9a8d4'];
 const getRandomNeon = (id) => {
     const index = id.charCodeAt(0) % neonColors.length;
     return neonColors[index];
@@ -377,7 +377,7 @@ export default function Home() {
                     <SortableItem key={item._id} id={item._id} style={{position:'relative'}}>
                          <a href={item.value} target="_blank" className={styles.visualCard}>
                             <img src={getImage(item.value, item.imageUrl)} className={styles.visualImg} alt={item.title} />
-                            <div className={styles.visualOverlay}>{item.title}</div>
+                            <div className={styles.visualTitle}>{item.title}</div>
                         </a>
                         <button style={{position:'absolute', top:5, left:5, background:'rgba(0,0,0,0.6)', border:'none', borderRadius:'50%', padding:5, cursor:'pointer', color:'white', zIndex:10}} onClick={(e) => { e.preventDefault(); openEditModal(item); }}><Edit2 size={14} /></button>
                     </SortableItem>
