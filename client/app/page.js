@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import styles from './page.module.css';
 
 // הכתובת של השרת ב-RENDER
-const API_URL = 'https://command-center-server.onrender.com/api/data';
+const API_URL = 'https://command-center-6pqx.onrender.com/api/data';
 
 export default function Home() {
   const [items, setItems] = useState([]);
