@@ -1,45 +1,60 @@
-require('dotenv').config();
+// server/index.js
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+require('dotenv').config();
+
+// ייבוא המודל
 const DashboardData = require('./models/DashboardData');
 
 const app = express();
+
+// הגדרות אבטחה וחיבור
 app.use(cors());
 app.use(express.json());
 
-// חיבור לדאטהבייס
+// התחברות לדאטה-בייס
 mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log('MongoDB Connected'))
-    .catch(err => console.error(err));
+  .then(() => console.log('MongoDB Connected'))
+  .catch(err => console.log(err));
 
-// שליפת הנתונים
+// --- נתיבים (Routes) ---
+
+// 1. קבלת כל הפריטים (GET)
 app.get('/api/data', async (req, res) => {
-    try {
-        let data = await DashboardData.findOne();
-        if (!data) {
-            // יצירת נתונים התחלתיים אם אין כלום
-            data = await DashboardData.create({ topics: [], quickPills: [], visualFavs: [] });
-        }
-        res.json(data);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+  try {
+    // שליפת כל הנתונים ומיון לפי סדר יצירה (החדש ביותר למעלה)
+    const items = await DashboardData.find().sort({ createdAt: -1 });
+    res.json(items); // חשוב: מחזיר מערך []
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// עדכון הנתונים (שמירה)
+// 2. הוספת פריט חדש (POST)
 app.post('/api/data', async (req, res) => {
+  try {
+    const newItem = new DashboardData({
+      title: req.body.title,
+      value: req.body.value,
+      section: req.body.section || 'docs',
+      imageUrl: req.body.imageUrl || '',
+      category: req.body.category || 'general'
+    });
+
+    const savedItem = await newItem.save();
+    res.json(savedItem);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 3. מחיקת פריט (DELETE)
+app.delete('/api/data/:id', async (req, res) => {
     try {
-        // מעדכן את המסמך היחיד או יוצר חדש
-        // (בפרויקט אמיתי מרובה משתמשים היינו מסננים לפי UserID)
-        const { topics, quickPills, visualFavs } = req.body;
-
-        // מחיקת הקודם ויצירת חדש (הכי פשוט לניהול Drag&Drop)
-        // או שימוש ב updateOne עם upsert
-        await DashboardData.deleteMany({});
-        const newData = await DashboardData.create({ topics, quickPills, visualFavs });
-
-        res.json(newData);
+        const { id } = req.params;
+        await DashboardData.findByIdAndDelete(id);
+        res.json({ message: 'Item deleted' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
