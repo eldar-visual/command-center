@@ -1,15 +1,15 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { Info, Plus, Trash2, Edit2, Link as LinkIcon } from 'lucide-react'; 
+import { Info, Plus, Trash2, Edit2, Link as LinkIcon, Pencil } from 'lucide-react'; 
 import styles from './page.module.css';
 
-// הכתובת לשרת
 const API_URL = 'https://command-center-6pqx.onrender.com/api/data';
+// כתובת מיוחדת לשינוי שם טאב
+const RENAME_TAB_URL = 'https://command-center-6pqx.onrender.com/api/tabs/rename';
 
 export default function Home() {
   const [items, setItems] = useState([]);
   
-  // תיקון 1: מתחילים עם מערך ריק, לא מכריחים את 'כללי'
   const [tabs, setTabs] = useState([]); 
   const [activeTab, setActiveTab] = useState('');
   const [isAddingTab, setIsAddingTab] = useState(false);
@@ -18,12 +18,17 @@ export default function Home() {
   // מודלים ועריכה
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalType, setModalType] = useState('docs'); 
-  
   const [editingItemId, setEditingItemId] = useState(null); 
   const [formData, setFormData] = useState({ title: '', value: '', imageUrl: '', category: '' });
   
+  // מחיקה
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
+
+  // שינוי שם טאב (חדש!)
+  const [isRenameTabModalOpen, setIsRenameTabModalOpen] = useState(false);
+  const [tabToRename, setTabToRename] = useState('');
+  const [newNameForTab, setNewNameForTab] = useState('');
 
   const [contextMenu, setContextMenu] = useState(null);
 
@@ -41,34 +46,24 @@ export default function Home() {
         const data = await res.json();
         setItems(data);
 
-        // --- התיקון הגדול ---
-        // 1. לוקחים רק פריטים ששייכים לרשימות (docs)
         const docItems = data.filter(i => i.section === 'docs' || !i.section);
-        
-        // 2. בונים רשימת קטגוריות *רק* ממה שקיים בנתונים בפועל
-        // (אם לפריט אין קטגוריה, הוא מקבל 'כללי' כברירת מחדל מהשרת, אז זה יופיע כאן)
         const uniqueCategories = new Set(docItems.map(i => i.category || 'כללי'));
-        
-        // 3. ממירים למערך וממיינים
         const calculatedTabs = Array.from(uniqueCategories).sort();
         
         setTabs(calculatedTabs);
 
-        // 4. ניהול הטאב הפעיל בצורה חכמה
         setActiveTab(prev => {
-            // אם הטאב שהיינו בו עדיין קיים - נשארים בו
             if (calculatedTabs.includes(prev)) return prev;
-            // אחרת - הולכים לראשון, ואם אין כלום אז כלום
             return calculatedTabs.length > 0 ? calculatedTabs[0] : '';
         });
       }
     } catch (error) { console.error("Error:", error); }
   };
 
+  // --- הוספה / עריכת פריט ---
   const openAddModal = (type) => {
       setEditingItemId(null); 
       setModalType(type);
-      // אם יש טאב פעיל - הפריט החדש ילך אליו. אם אין טאבים בכלל - ברירת מחדל 'כללי'
       const defaultCategory = type === 'docs' ? (activeTab || 'כללי') : 'כללי';
       setFormData({ title: '', value: '', imageUrl: '', category: defaultCategory });
       setIsModalOpen(true);
@@ -91,8 +86,6 @@ export default function Home() {
     if (!formData.value) return;
 
     let formattedUrl = formData.value.startsWith('http') ? formData.value : `https://${formData.value}`;
-    
-    // מוודאים שיש קטגוריה (אם המשתמש מחק בטעות)
     const categoryToSend = formData.category || 'כללי';
 
     const payload = {
@@ -123,7 +116,6 @@ export default function Home() {
             await fetchData();
             setIsModalOpen(false);
             setEditingItemId(null);
-            // אם יצרנו פריט בטאב חדש שעדיין לא קיים, נעבור אליו
             if (!tabs.includes(categoryToSend) && modalType === 'docs') {
                 setActiveTab(categoryToSend);
             }
@@ -131,20 +123,52 @@ export default function Home() {
     } catch (e) { console.error(e); }
   };
 
+  // --- שינוי שם טאב (הלוגיקה החדשה) ---
+  const openRenameTabModal = () => {
+      if (!contextMenu?.targetName) return;
+      setTabToRename(contextMenu.targetName);
+      setNewNameForTab(contextMenu.targetName);
+      setIsRenameTabModalOpen(true);
+      setContextMenu(null); // סגירת התפריט
+  };
+
+  const handleRenameTabSubmit = async (e) => {
+      e.preventDefault();
+      if (!newNameForTab.trim() || newNameForTab === tabToRename) {
+          setIsRenameTabModalOpen(false);
+          return;
+      }
+
+      try {
+          // שליחת בקשה לשרת לעדכן את כל הפריטים
+          const res = await fetch(RENAME_TAB_URL, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ oldName: tabToRename, newName: newNameForTab }),
+          });
+
+          if (res.ok) {
+              await fetchData(); // רענון הנתונים יביא את השמות החדשים
+              if (activeTab === tabToRename) setActiveTab(newNameForTab); // עדכון הטאב הפעיל אם צריך
+              setIsRenameTabModalOpen(false);
+          }
+      } catch (error) {
+          console.error("Error renaming tab:", error);
+      }
+  };
+
+
   const confirmDelete = async () => {
     if (!itemToDelete) return;
     try {
         await fetch(`${API_URL}/${itemToDelete}`, { method: 'DELETE' });
-        // אחרי מחיקה חייבים למשוך מחדש כדי לראות אם הטאב התרוקן ונעלם
         await fetchData(); 
         setIsDeleteModalOpen(false);
     } catch (error) { console.error(error); }
   };
 
-  // הוספת טאב "וירטואלי" (עד שמוסיפים בו פריט)
   const handleAddTab = () => {
       if (newTabName.trim()) {
-          // בודקים אם כבר קיים
           if (!tabs.includes(newTabName)) {
               setTabs([...tabs, newTabName]);
           }
@@ -156,12 +180,9 @@ export default function Home() {
 
   const handleTabContextMenu = (e, tab) => {
       e.preventDefault();
-      // מאפשרים למחוק כל טאב (המחיקה רק מסתירה אותו ויזואלית אם הוא ריק, או תדרוש לוגיקה נוספת בהמשך)
       setContextMenu({ x: e.pageX, y: e.pageY, targetName: tab });
   };
 
-  // מחיקת טאב כרגע רק מסתירה אותו מהתצוגה הנוכחית
-  // (אם יש בו פריטים, הם יחזירו אותו בריענון הבא - זה מנגנון בטיחות)
   const deleteTab = () => {
       if (!contextMenu?.targetName) return;
       const tabToDelete = contextMenu.targetName;
@@ -192,7 +213,7 @@ export default function Home() {
       <div className={styles.headerWrapper}>
         <div className={styles.infoIconWrapper}>
             <Info size={24} />
-            <div className={styles.versionTooltip}>גרסה 1.0.4</div>
+            <div className={styles.versionTooltip}>גרסה 1.0.5</div>
         </div>
         <div style={{textAlign: 'center'}}>
             <h1 className={styles.title}>מרכז שליטה</h1>
@@ -200,7 +221,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* --- Tabs --- */}
       <div className={styles.tabsContainer}>
         {tabs.map(tab => (
             <button 
@@ -224,10 +244,8 @@ export default function Home() {
         )}
       </div>
 
-      {/* --- Main List --- */}
       <section className={styles.contentArea}>
         <div className={styles.sectionHeader}>
-            {/* אם אין טאבים בכלל, מציגים כותרת ברירת מחדל */}
             <h2 className={styles.sectionTitle}>{activeTab || 'רשימה'}</h2>
             <button className={styles.addItemBtn} onClick={() => openAddModal('docs')}>
                 <Plus size={18} /> פריט חדש
@@ -236,7 +254,7 @@ export default function Home() {
 
         <div className={styles.itemsList}>
             {currentTabItems.length === 0 && <p style={{color:'#64748b', textAlign:'center'}}>
-                {tabs.length === 0 ? 'אין טאבים עדיין. לחץ על + ליצירת טאב חדש.' : 'הטאב ריק.'}
+                {tabs.length === 0 ? 'אין טאבים עדיין.' : 'הטאב ריק.'}
             </p>}
             
             {currentTabItems.map(item => (
@@ -258,7 +276,6 @@ export default function Home() {
 
       <div className={styles.divider}></div>
 
-      {/* --- Buttons --- */}
       <div className={styles.quickAccessContainer}>
         {quickAccessItems.map(item => (
             <a key={item._id} href={item.value} target="_blank" className={styles.quickBtn}>
@@ -275,7 +292,6 @@ export default function Home() {
         )}
       </div>
 
-      {/* --- Visuals --- */}
       <div className={styles.visualsGrid}>
         {visualsItems.map(item => (
              <div key={item._id} style={{position:'relative'}}>
@@ -297,20 +313,16 @@ export default function Home() {
          </button>
       </div>
 
-      {/* --- Unified Modal --- */}
       {isModalOpen && (
         <div className={styles.modalOverlay} onClick={(e) => e.target === e.currentTarget && setIsModalOpen(false)}>
           <form className={styles.modal} onSubmit={handleSave}>
             <h2 style={{color:'white', marginBottom:'20px'}}>
                 {editingItemId ? 'עריכת פריט' : 'הוספת פריט חדש'}
             </h2>
-            
             <label style={{color:'#94a3b8', fontSize:'0.9rem'}}>כותרת</label>
             <input value={formData.title} onChange={e=>setFormData({...formData, title: e.target.value})} className={styles.input} required />
-            
             <label style={{color:'#94a3b8', fontSize:'0.9rem'}}>כתובת (URL)</label>
             <input value={formData.value} onChange={e=>setFormData({...formData, value: e.target.value})} className={styles.input} required />
-            
             {modalType === 'docs' && (
                 <>
                     <label style={{color:'#94a3b8', fontSize:'0.9rem'}}>בחירת טאב (קטגוריה)</label>
@@ -323,17 +335,17 @@ export default function Home() {
                         {tabs.map(tab => (
                             <option key={tab} value={tab}>{tab}</option>
                         ))}
+                         {/* הוספת אפשרות ליצור טאב חדש דרך העריכה */}
+                         <option value={newTabName || 'חדש...'}>+ טאב חדש...</option>
                     </select>
                 </>
             )}
-
             {modalType === 'visuals' && (
                  <>
                     <label style={{color:'#94a3b8', fontSize:'0.9rem'}}>תמונה (אופציונלי)</label>
                     <input value={formData.imageUrl} onChange={e=>setFormData({...formData, imageUrl: e.target.value})} className={styles.input} />
                  </>
             )}
-
             <div className={styles.modalButtons}>
                 <button type="button" onClick={() => setIsModalOpen(false)} className={styles.btnSecondary}>ביטול</button>
                 <button type="submit" className={styles.btnPrimary}>שמור</button>
@@ -342,7 +354,26 @@ export default function Home() {
         </div>
       )}
 
-      {/* --- Delete Modal --- */}
+      {/* --- Rename Tab Modal --- */}
+      {isRenameTabModalOpen && (
+        <div className={styles.modalOverlay} onClick={(e) => e.target === e.currentTarget && setIsRenameTabModalOpen(false)}>
+          <form className={styles.modal} onSubmit={handleRenameTabSubmit}>
+            <h2 style={{color:'white', marginBottom:'20px'}}>שינוי שם טאב</h2>
+            <input 
+                value={newNameForTab} 
+                onChange={e => setNewNameForTab(e.target.value)} 
+                className={styles.input} 
+                autoFocus
+                required 
+            />
+            <div className={styles.modalButtons}>
+                <button type="button" onClick={() => setIsRenameTabModalOpen(false)} className={styles.btnSecondary}>ביטול</button>
+                <button type="submit" className={styles.btnPrimary}>שמור</button>
+            </div>
+          </form>
+        </div>
+      )}
+
       {isDeleteModalOpen && (
         <div className={styles.modalOverlay} onClick={(e) => e.target === e.currentTarget && setIsDeleteModalOpen(false)}>
           <div className={styles.modal} style={{textAlign: 'center'}}>
@@ -356,9 +387,11 @@ export default function Home() {
         </div>
       )}
 
-      {/* --- Context Menu --- */}
       {contextMenu && (
           <div className={styles.contextMenu} style={{ top: contextMenu.y, left: contextMenu.x }}>
+              <div className={styles.contextMenuItem} onClick={openRenameTabModal}>
+                  <Pencil size={14} /> שנה שם
+              </div>
               <div className={`${styles.contextMenuItem} ${styles.deleteItem}`} onClick={deleteTab}>
                   <Trash2 size={14} /> מחק טאב
               </div>

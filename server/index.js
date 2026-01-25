@@ -48,7 +48,7 @@ app.post('/api/data', async (req, res) => {
       value: req.body.value,
       section: req.body.section || 'docs',
       imageUrl: req.body.imageUrl || '',
-      category: req.body.category || 'general'
+      category: req.body.category || 'כללי'
     });
     const savedItem = await newItem.save();
     res.json(savedItem);
@@ -57,7 +57,7 @@ app.post('/api/data', async (req, res) => {
   }
 });
 
-// 3. עדכון פריט (חדש! - בשביל כפתור העריכה)
+// 3. עדכון פריט בודד
 app.put('/api/data/:id', async (req, res) => {
     try {
         const { id } = req.params;
@@ -68,7 +68,22 @@ app.put('/api/data/:id', async (req, res) => {
     }
 });
 
-// 4. מחיקת פריט
+// 4. נתיב חדש! שינוי שם טאב (עדכון קטגוריה לכל הפריטים)
+app.put('/api/tabs/rename', async (req, res) => {
+    try {
+        const { oldName, newName } = req.body;
+        // מעדכן את כל המסמכים שבהם הקטגוריה היא השם הישן
+        await DashboardData.updateMany(
+            { category: oldName },
+            { $set: { category: newName } }
+        );
+        res.json({ message: 'Tab renamed successfully' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// 5. מחיקת פריט
 app.delete('/api/data/:id', async (req, res) => {
     try {
         const { id } = req.params;
