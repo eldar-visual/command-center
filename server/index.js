@@ -1,19 +1,25 @@
-// server/index.js
+ֿ// server/index.js
 const express = require('express');
 const mongoose = require('mongoose');
-const cors = require('cors'); // חובה
 require('dotenv').config();
 
 const DashboardData = require('./models/DashboardData');
 
 const app = express();
 
-// --- כאן התיקון: פתיחת גישה לכולם ---
-app.use(cors({
-    origin: '*', 
-    methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type']
-}));
+// --- פתרון CORS ידני (בלי ספריות) ---
+// זה מוסיף את הכותרות הדרושות לכל תשובה שהשרת שולח
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*"); // מאפשר גישה לכולם
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+  
+  // אם הדפדפן שואל "האם מותר?" (בקשת OPTIONS) - ענה מיד "כן"
+  if (req.method === "OPTIONS") {
+     return res.sendStatus(200);
+  }
+  next();
+});
 
 app.use(express.json());
 
