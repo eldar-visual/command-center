@@ -68,16 +68,18 @@ app.put('/api/data/:id', async (req, res) => {
     }
 });
 
-// 4. נתיב חדש! שינוי שם טאב (עדכון קטגוריה לכל הפריטים)
-app.put('/api/tabs/rename', async (req, res) => {
+// 4. נתיב לסידור מחדש (Reorder)
+app.put('/api/data/reorder', async (req, res) => {
     try {
-        const { oldName, newName } = req.body;
-        // מעדכן את כל המסמכים שבהם הקטגוריה היא השם הישן
-        await DashboardData.updateMany(
-            { category: oldName },
-            { $set: { category: newName } }
+        const { items } = req.body; // מקבל מערך של { id, order }
+        
+        // מעדכן את כולם במקביל
+        const updates = items.map(item => 
+            DashboardData.findByIdAndUpdate(item._id, { order: item.order })
         );
-        res.json({ message: 'Tab renamed successfully' });
+        
+        await Promise.all(updates);
+        res.json({ message: 'Order updated' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
