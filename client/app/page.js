@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { 
-  Info, Plus, Trash2, Edit2, Link as LinkIcon, Pencil 
+  Info, Plus, Trash2, Edit2, Link as LinkIcon, Pencil, Upload 
 } from 'lucide-react'; 
 import { 
   DndContext, 
@@ -17,6 +17,7 @@ import {
   sortableKeyboardCoordinates, 
   verticalListSortingStrategy, 
   rectSortingStrategy,
+  horizontalListSortingStrategy, // חדש: לגרירה אופקית של טאבים
   useSortable
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -26,16 +27,16 @@ const API_URL = 'https://command-center-6pqx.onrender.com/api/data';
 const REORDER_URL = 'https://command-center-6pqx.onrender.com/api/data/reorder';
 const RENAME_TAB_URL = 'https://command-center-6pqx.onrender.com/api/tabs/rename';
 
-// --- רכיב עזר לפריט נגרר (Sortable Item) ---
+const APP_VERSION = "1.0.0"; // הגרסה הרשמית
+
+// --- רכיב עזר לפריט נגרר ---
 function SortableItem({ id, children, className, style }) {
     const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
-    
     const dndStyle = {
         transform: CSS.Transform.toString(transform),
         transition,
         ...style
     };
-
     return (
         <div ref={setNodeRef} style={dndStyle} {...attributes} {...listeners} className={className}>
             {children}
@@ -43,21 +44,11 @@ function SortableItem({ id, children, className, style }) {
     );
 }
 
-// --- פונקציית צבעים רנדומליים (אך עקביים לפי טקסט) ---
-const stringToColor = (str) => {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-        hash = str.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    const c = (hash & 0x00FFFFFF).toString(16).toUpperCase();
-    return '#' + '00000'.substring(0, 6 - c.length) + c;
-};
-
-// פלטת צבעי ניאון לטאבים ולכפתורים
-const neonColors = ['#fca5a5', '#fdba74', '#fde047', '#86efac', '#67e8f9', '#93c5fd', '#c4b5fd', '#f9a8d4'];
-const getRandomNeon = (id) => {
-    const index = id.charCodeAt(0) % neonColors.length;
-    return neonColors[index];
+// פלטת צבעי פסטל
+const pastelColors = ['#fca5a5', '#fdba74', '#fde047', '#86efac', '#67e8f9', '#93c5fd', '#c4b5fd', '#f9a8d4'];
+const getRandomPastel = (id) => {
+    const index = id.length % pastelColors.length; // פשוט לפי אורך המחרוזת
+    return pastelColors[index];
 };
 
 export default function Home() {
@@ -65,7 +56,7 @@ export default function Home() {
   const [tabs, setTabs] = useState([]); 
   const [activeTab, setActiveTab] = useState('');
   
-  // States for Modals
+  // Modals
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalType, setModalType] = useState('docs'); 
   const [editingItemId, setEditingItemId] = useState(null); 
@@ -73,21 +64,18 @@ export default function Home() {
   
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
-
   const [contextMenu, setContextMenu] = useState(null);
   
-  // Tab Rename
+  // Tab Rename & Add
   const [isRenameTabModalOpen, setIsRenameTabModalOpen] = useState(false);
   const [tabToRename, setTabToRename] = useState('');
   const [newNameForTab, setNewNameForTab] = useState('');
-
-  // Add Tab
   const [isAddingTab, setIsAddingTab] = useState(false);
   const [newTabName, setNewTabName] = useState('');
 
-  // DND Sensors (גרירה)
+  // Sensors
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }), // מרחק מינימלי למנוע קליקים בטעות
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
@@ -103,13 +91,27 @@ export default function Home() {
       const res = await fetch(API_URL);
       if (res.ok) {
         const data = await res.json();
-        // מיון לפי הסדר (Order)
         const sortedData = data.sort((a, b) => (a.order || 0) - (b.order || 0));
         setItems(sortedData);
 
+        // חישוב טאבים
         const docItems = sortedData.filter(i => i.section === 'docs' || !i.section);
         const uniqueCategories = new Set(docItems.map(i => i.category || 'כללי'));
-        const calculatedTabs = Array.from(uniqueCategories).sort();
+        let calculatedTabs = Array.from(uniqueCategories).sort();
+
+        // בדיקה אם יש סדר שמור בזיכרון הדפדפן
+        const savedTabOrder = localStorage.getItem('tabsOrder');
+        if (savedTabOrder) {
+            const order = JSON.parse(savedTabOrder);
+            calculatedTabs.sort((a, b) => {
+                const indexA = order.indexOf(a);
+                const indexB = order.indexOf(b);
+                if (indexA === -1) return 1;
+                if (indexB === -1) return -1;
+                return indexA - indexB;
+            });
+        }
+        
         setTabs(calculatedTabs);
 
         setActiveTab(prev => {
@@ -120,40 +122,53 @@ export default function Home() {
     } catch (error) { console.error("Error:", error); }
   };
 
-  // --- לוגיקת גרירה (Drag End) ---
+  // --- גרירה כללית (מטפלת גם בפריטים וגם בטאבים) ---
   const handleDragEnd = async (event) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    // מציאת הפריט הישן והחדש
+    // 1. האם נגרר טאב?
+    if (tabs.includes(active.id)) {
+        const oldIndex = tabs.indexOf(active.id);
+        const newIndex = tabs.indexOf(over.id);
+        const newTabs = arrayMove(tabs, oldIndex, newIndex);
+        setTabs(newTabs);
+        // שמירת סדר הטאבים בזיכרון המקומי
+        localStorage.setItem('tabsOrder', JSON.stringify(newTabs));
+        return;
+    }
+
+    // 2. אחרת, זה פריט רגיל
     const oldIndex = items.findIndex((i) => i._id === active.id);
     const newIndex = items.findIndex((i) => i._id === over.id);
 
-    // עדכון מקומי מהיר (כדי שהמשתמש יראה מיד)
     const newItems = arrayMove(items, oldIndex, newIndex);
     setItems(newItems);
 
-    // שמירה בשרת
-    // אנחנו שולחים רק את ה-ID והמיקום החדש שלו לכל המערך
-    const reorderPayload = newItems.map((item, index) => ({
-        _id: item._id,
-        order: index
-    }));
-
+    const reorderPayload = newItems.map((item, index) => ({ _id: item._id, order: index }));
     try {
         await fetch(REORDER_URL, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ items: reorderPayload })
         });
-    } catch (e) {
-        console.error("Failed to save order", e);
-    }
+    } catch (e) { console.error("Failed to save order", e); }
   };
 
-  // ... (שאר הפונקציות: handleSave, openAddModal וכו' נשארות ללא שינוי)
-  // לצורך הקיצור לא העתקתי את הכל שוב, אבל אתה צריך את כל הפונקציות מהקוד הקודם (handleSave, confirmDelete, וכו')
-  // הנה ה-handleSave לדוגמה (כי הוא קריטי):
+  // --- העלאת תמונה מהמחשב ---
+  const handleImageUpload = (e) => {
+      const file = e.target.files[0];
+      if (file) {
+          // המרה ל-Base64
+          const reader = new FileReader();
+          reader.onloadend = () => {
+              setFormData({ ...formData, imageUrl: reader.result });
+          };
+          reader.readAsDataURL(file);
+      }
+  };
+
+  // --- CRUD Functions ---
   const handleSave = async (e) => {
     e.preventDefault();
     if (!formData.value) return;
@@ -165,24 +180,20 @@ export default function Home() {
       section: modalType === 'visuals' ? 'visuals' : modalType === 'buttons' ? 'buttons' : 'docs',
       imageUrl: formData.imageUrl,
       category: categoryToSend,
-      order: items.length // מוסיף לסוף הרשימה
+      order: items.length
     };
 
     try {
         let res;
-        if (editingItemId) {
-            res = await fetch(`${API_URL}/${editingItemId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-            });
-        } else {
-            res = await fetch(API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-            });
-        }
+        const method = editingItemId ? 'PUT' : 'POST';
+        const url = editingItemId ? `${API_URL}/${editingItemId}` : API_URL;
+        
+        res = await fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+
         if (res.ok) {
             await fetchData();
             setIsModalOpen(false);
@@ -192,7 +203,7 @@ export default function Home() {
     } catch (e) { console.error(e); }
   };
 
-   const openAddModal = (type) => {
+  const openAddModal = (type) => {
       setEditingItemId(null); 
       setModalType(type);
       const defaultCategory = type === 'docs' ? (activeTab || 'כללי') : 'כללי';
@@ -221,9 +232,14 @@ export default function Home() {
     } catch (error) { console.error(error); }
   };
 
+  // Tab Logic
   const handleAddTab = () => {
       if (newTabName.trim()) {
-          if (!tabs.includes(newTabName)) setTabs([...tabs, newTabName]);
+          if (!tabs.includes(newTabName)) {
+              const newTabs = [...tabs, newTabName];
+              setTabs(newTabs);
+              localStorage.setItem('tabsOrder', JSON.stringify(newTabs));
+          }
           setActiveTab(newTabName);
           setNewTabName('');
           setIsAddingTab(false);
@@ -263,13 +279,15 @@ export default function Home() {
   const deleteTab = () => {
       if (!contextMenu?.targetName) return;
       const tabToDelete = contextMenu.targetName;
-      setTabs(tabs.filter(t => t !== tabToDelete));
-      if (activeTab === tabToDelete) setActiveTab(tabs[0] || '');
+      const newTabs = tabs.filter(t => t !== tabToDelete);
+      setTabs(newTabs);
+      localStorage.setItem('tabsOrder', JSON.stringify(newTabs));
+      if (activeTab === tabToDelete) setActiveTab(newTabs[0] || '');
       setContextMenu(null);
   };
 
   const getImage = (url, customImage) => {
-    if (customImage) return customImage;
+    if (customImage) return customImage; // זה יכול להיות URL או Base64
     if (!url) return '/globe.svg';
     const youtubeRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
     const match = url.match(youtubeRegex);
@@ -280,7 +298,6 @@ export default function Home() {
     } catch { return '/globe.svg'; }
   };
 
-  // פילטורים
   const currentTabItems = items.filter(i => i.section === 'docs' && (i.category === activeTab || (!i.category && activeTab === 'כללי')));
   const quickAccessItems = items.filter(i => i.section === 'buttons');
   const visualsItems = items.filter(i => i.section === 'visuals');
@@ -289,34 +306,35 @@ export default function Home() {
     <main className={styles.main}>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         
+        {/* --- Header Cleaned --- */}
         <div className={styles.headerWrapper}>
             <div className={styles.infoIconWrapper}>
                 <Info size={24} />
-                <div className={styles.versionTooltip}>גרסה 2.0 - גרירה וצבע</div>
+                <div className={styles.versionTooltip}>גרסה {APP_VERSION}</div>
             </div>
             <div style={{textAlign: 'center'}}>
                 <h1 className={styles.title}>מרכז שליטה</h1>
-                <div className={styles.subtitle}>PERSONAL DASHBOARD V6.0</div>
+                {/* הסרנו את תת הכותרת */}
             </div>
         </div>
 
-        {/* --- Tabs ( עם צבעים רנדומליים לקו התחתון) --- */}
+        {/* --- Tabs (Draggable Horizontal) --- */}
         <div className={styles.tabsContainer}>
-            {tabs.map(tab => {
-                const isActive = activeTab === tab;
-                const tabColor = getRandomNeon(tab);
-                return (
-                    <button 
-                        key={tab} 
-                        className={`${styles.tab} ${isActive ? styles.activeTab : ''}`}
-                        style={isActive ? { borderColor: tabColor, color: '#fff' } : {}}
-                        onClick={() => setActiveTab(tab)}
-                        onContextMenu={(e) => handleTabContextMenu(e, tab)}
-                    >
-                        {tab}
-                    </button>
-                );
-            })}
+            <SortableContext items={tabs} strategy={horizontalListSortingStrategy}>
+                {tabs.map(tab => {
+                    const isActive = activeTab === tab;
+                    const tabColor = getRandomPastel(tab);
+                    return (
+                        <SortableItem key={tab} id={tab} className={`${styles.tab} ${isActive ? styles.activeTab : ''}`} 
+                                      style={isActive ? { borderColor: tabColor, color: '#fff' } : {}}>
+                            <div onClick={() => setActiveTab(tab)} onContextMenu={(e) => handleTabContextMenu(e, tab)} style={{width:'100%', height:'100%'}}>
+                                {tab}
+                            </div>
+                        </SortableItem>
+                    );
+                })}
+            </SortableContext>
+            
             {isAddingTab ? (
                 <input autoFocus className={styles.newTabInput} value={newTabName} onChange={e => setNewTabName(e.target.value)} onBlur={handleAddTab} onKeyDown={e => e.key === 'Enter' && handleAddTab()} placeholder="שם..." />
             ) : (
@@ -324,7 +342,7 @@ export default function Home() {
             )}
         </div>
 
-        {/* --- List Area (Draggable) --- */}
+        {/* --- List Area --- */}
         <section className={styles.contentArea}>
             <div className={styles.sectionHeader}>
                 <h2 className={styles.sectionTitle}>{activeTab || 'רשימה'}</h2>
@@ -353,11 +371,11 @@ export default function Home() {
 
         <div className={styles.divider}></div>
 
-        {/* --- Quick Access (Draggable + Random Borders) --- */}
+        {/* --- Quick Access --- */}
         <div className={styles.quickAccessContainer}>
             <SortableContext items={quickAccessItems.map(i => i._id)} strategy={rectSortingStrategy}>
                 {quickAccessItems.map(item => {
-                    const borderColor = getRandomNeon(item.title); // צבע לפי שם
+                    const borderColor = getRandomPastel(item.title);
                     return (
                         <SortableItem key={item._id} id={item._id} className={styles.quickBtn} style={{borderColor: borderColor}}>
                              <img src={getImage(item.value)} style={{width:16, height:16, borderRadius:'50%'}} alt="" />
@@ -370,7 +388,7 @@ export default function Home() {
             {quickAccessItems.length < 8 && <button className={styles.addQuickBtn} onClick={() => openAddModal('buttons')}><Plus size={20} /></button>}
         </div>
 
-        {/* --- Visuals (Draggable) --- */}
+        {/* --- Visuals --- */}
         <div className={styles.visualsGrid}>
             <SortableContext items={visualsItems.map(i => i._id)} strategy={rectSortingStrategy}>
                 {visualsItems.map(item => (
@@ -383,7 +401,7 @@ export default function Home() {
                     </SortableItem>
                 ))}
             </SortableContext>
-             <button className={styles.visualCard} style={{background: 'rgba(255,255,255,0.05)', border:'2px dashed #334155', display:'flex', alignItems:'center', justifyContent:'center', color:'#64748b'}} onClick={() => openAddModal('visuals')}><Plus size={40} /></button>
+             <button className={styles.visualCard} style={{background: 'rgba(255,255,255,0.02)', border:'2px dashed #334155', display:'flex', alignItems:'center', justifyContent:'center', color:'#64748b', minHeight:'150px'}} onClick={() => openAddModal('visuals')}><Plus size={40} /></button>
         </div>
 
       </DndContext>
@@ -393,15 +411,31 @@ export default function Home() {
         <div className={styles.modalOverlay} onClick={(e) => e.target === e.currentTarget && setIsModalOpen(false)}>
           <form className={styles.modal} onSubmit={handleSave}>
             <h2 style={{color:'white', marginBottom:'20px'}}>{editingItemId ? 'עריכה' : 'חדש'}</h2>
+            
             <input value={formData.title} onChange={e=>setFormData({...formData, title: e.target.value})} className={styles.input} placeholder="כותרת" required />
             <input value={formData.value} onChange={e=>setFormData({...formData, value: e.target.value})} className={styles.input} placeholder="URL" required />
+            
             {modalType === 'docs' && (
                 <select value={formData.category} onChange={e=>setFormData({...formData, category: e.target.value})} className={styles.select}>
                     {tabs.map(tab => <option key={tab} value={tab}>{tab}</option>)}
                     <option value={newTabName || 'חדש...'}>+ טאב חדש...</option>
                 </select>
             )}
-             {modalType === 'visuals' && <input value={formData.imageUrl} onChange={e=>setFormData({...formData, imageUrl: e.target.value})} className={styles.input} placeholder="תמונה" />}
+            
+            {/* כפתור העלאת תמונה למחשב */}
+            {modalType === 'visuals' && (
+                <div style={{marginBottom:'15px'}}>
+                    <input value={formData.imageUrl} onChange={e=>setFormData({...formData, imageUrl: e.target.value})} className={styles.input} placeholder="URL תמונה (או העלה קובץ למטה)" />
+                    <div style={{position: 'relative', overflow: 'hidden', display: 'inline-block'}}>
+                        <button type="button" className={styles.btnSecondary} style={{display:'flex', gap:'5px', alignItems:'center'}}>
+                            <Upload size={16} /> העלה תמונה מהמחשב
+                        </button>
+                        <input type="file" accept="image/*" onChange={handleImageUpload} style={{position: 'absolute', left: 0, top: 0, opacity: 0, width:'100%', height:'100%', cursor:'pointer'}} />
+                    </div>
+                    {formData.imageUrl && formData.imageUrl.startsWith('data:') && <p style={{fontSize:'0.8rem', color:'#86efac', marginTop:'5px'}}>תמונה נבחרה בהצלחה!</p>}
+                </div>
+            )}
+
             <div className={styles.modalButtons}>
                 <button type="button" onClick={() => setIsModalOpen(false)} className={styles.btnSecondary}>ביטול</button>
                 <button type="submit" className={styles.btnPrimary}>שמור</button>
@@ -410,7 +444,7 @@ export default function Home() {
         </div>
       )}
       
-      {/* שאר המודלים (מחיקה, שינוי שם טאב) נשארים זהים למה שהיה קודם... תוודא שהם קיימים בקוד שלך */}
+      {/* ... (שאר המודלים ללא שינוי) ... */}
        {isRenameTabModalOpen && (
         <div className={styles.modalOverlay} onClick={(e) => e.target === e.currentTarget && setIsRenameTabModalOpen(false)}>
           <form className={styles.modal} onSubmit={handleRenameTabSubmit}>
