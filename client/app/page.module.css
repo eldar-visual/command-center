@@ -1,7 +1,11 @@
 /* client/app/page.module.css */
+
+/* 1. ייבוא הפונט Rubik מגוגל */
+@import url('https://fonts.googleapis.com/css2?family=Rubik:wght@900&display=swap');
+
 .main {
   min-height: 100vh;
-  background-color: #0f111a; /* רקע כהה עמוק */
+  background-color: #0f111a;
   color: #e2e8f0;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   display: flex;
@@ -11,7 +15,7 @@
   position: relative;
 }
 
-/* --- Header --- */
+/* ... (שאר העיצובים של Header ו-Tooltip נשארים אותו דבר) ... */
 .headerWrapper {
   display: flex;
   align-items: center;
@@ -58,14 +62,28 @@
   transform: translateY(0);
 }
 
+/* --- השינוי בכותרת --- */
 .title {
-  font-size: 3rem;
-  font-weight: 800;
-  color: #8b5cf6; /* סגול-כחול */
-  text-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+  font-family: 'Rubik', sans-serif; /* הפונט החדש */
+  font-weight: 900; /* משקל כבד מאוד */
+  font-size: 4.5rem; /* גודל מרשים */
+  
+  /* גרדיינט אפור מטאלי (10% עד 30%) */
+  background: linear-gradient(180deg, #f3f4f6 0%, #9ca3af 100%);
+  
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  
   margin: 0;
-  letter-spacing: -1px;
+  letter-spacing: -2px; /* צמצום רווחים למראה בלוקי */
+  
+  /* צל עדין מאוד להבלטה */
+  filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5));
 }
+
+/* ... (כל שאר הקובץ נשאר ללא שינוי - תעתיק את ההמשך מהקובץ הקודם שלך אם צריך, או שתחליף רק את הבלוק של .title) ... */
+
+/* אני מצרף כאן את המשך הקובץ ליתר ביטחון כדי שלא ימחק לך כלום */
 
 .subtitle {
   font-size: 0.9rem;
@@ -76,7 +94,6 @@
   text-align: center;
 }
 
-/* --- Tabs Area --- */
 .tabsContainer {
   display: flex;
   align-items: center;
@@ -105,7 +122,7 @@
 
 .activeTab {
   color: #fff;
-  border-bottom: 3px solid #3b82f6;
+  /* border-bottom is handled inline via JS now */
 }
 
 .addTabBtn {
@@ -129,7 +146,17 @@
   border-color: #64748b;
 }
 
-/* --- Main Content Area --- */
+.newTabInput {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid #3b82f6;
+    color: white;
+    font-size: 1.2rem;
+    font-weight: bold;
+    width: 100px;
+    outline: none;
+}
+
 .contentArea {
   background: #151923;
   border-radius: 16px;
@@ -172,7 +199,6 @@
   transform: translateY(-2px);
 }
 
-/* --- Items List --- */
 .itemsList {
   display: flex;
   flex-direction: column;
@@ -201,7 +227,7 @@
 .itemActions {
   display: flex;
   gap: 10px;
-  opacity: 0; /* מוסתר עד שעוברים עם העכבר */
+  opacity: 0;
   transition: 0.2s;
 }
 
@@ -228,7 +254,6 @@
   background: rgba(239, 68, 68, 0.1);
 }
 
-/* --- Divider --- */
 .divider {
   height: 1px;
   background: #334155;
@@ -237,7 +262,6 @@
   opacity: 0.5;
 }
 
-/* --- Quick Access (Buttons) --- */
 .quickAccessContainer {
   display: flex;
   justify-content: center;
@@ -285,7 +309,6 @@
   color: #3b82f6;
 }
 
-/* --- Favorites (Visuals) --- */
 .visualsGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -298,24 +321,24 @@
   border-radius: 12px;
   overflow: hidden;
   position: relative;
-  display: flex;       /* שינוי: פריסה גמישה */
-  flex-direction: column; /* תמונה למעלה, טקסט למטה */
+  display: flex;
+  flex-direction: column;
   transition: 0.3s;
   border: 1px solid transparent;
   cursor: pointer;
   text-decoration: none;
-  height: 100%;        /* גובה מלא */
+  height: 100%;
 }
 
 .visualCard:hover {
   transform: translateY(-5px);
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
-  background: #262b3c; /* הבהרה קלה ברקע בעת מעבר */
+  background: #262b3c;
 }
 
 .visualImg {
   width: 100%;
-  aspect-ratio: 16 / 9; /* יחס תמונה קבוע */
+  aspect-ratio: 16 / 9;
   object-fit: cover;
   display: block;
 }
@@ -324,13 +347,62 @@
   padding: 12px 15px;
   font-size: 0.95rem;
   font-weight: 500;
-  color: #e2e8f0;      /* לבן-אפרפר נעים (ולא כחול!) */
+  color: #e2e8f0;
   text-align: center;
   background: transparent;
-  border-top: 1px solid rgba(255,255,255,0.05); /* קו הפרדה עדין */
+  border-top: 1px solid rgba(255,255,255,0.05);
 }
 
-/* --- Context Menu (Right Click) --- */
+/* Modals */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  backdrop-filter: blur(5px);
+}
+
+.modal {
+  background: #1e293b;
+  padding: 2rem;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 450px;
+  border: 1px solid #334155;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+  text-align: right; /* יישור לימין במודל */
+}
+
+.input, .select {
+  width: 100%;
+  padding: 12px;
+  background: #0f111a;
+  border: 1px solid #334155;
+  color: white;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  font-size: 1rem;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.modalButtons {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.btnPrimary { background: #3b82f6; color: white; padding: 10px; border-radius: 8px; border:none; flex:1; cursor:pointer; font-weight:bold; }
+.btnSecondary { background: #334155; color: white; padding: 10px; border-radius: 8px; border:none; flex:1; cursor:pointer; }
+.btnDanger { background: #ef4444; color: white; padding: 10px; border-radius: 8px; border:none; flex:1; cursor:pointer; }
+
+/* Context Menu */
 .contextMenu {
   position: fixed;
   background: #1e293b;
@@ -364,64 +436,4 @@
 .deleteItem:hover {
   background: #ef4444;
   color: white;
-}
-
-/* --- Modals (אותו עיצוב כמו קודם רק מותאם לכהה) --- */
-.modalOverlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.8);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 2000;
-  backdrop-filter: blur(5px);
-}
-
-.modal {
-  background: #1e293b;
-  padding: 2rem;
-  border-radius: 16px;
-  width: 90%;
-  max-width: 450px;
-  border: 1px solid #334155;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
-}
-
-.input, .select {
-  width: 100%;
-  padding: 12px;
-  background: #0f111a;
-  border: 1px solid #334155;
-  color: white;
-  border-radius: 8px;
-  margin-bottom: 15px;
-  font-size: 1rem;
-}
-
-.input:focus {
-  outline: none;
-  border-color: #3b82f6;
-}
-
-.modalButtons {
-  display: flex;
-  gap: 10px;
-  margin-top: 10px;
-}
-
-.btnPrimary { background: #3b82f6; color: white; padding: 10px; border-radius: 8px; border:none; flex:1; cursor:pointer; font-weight:bold; }
-.btnSecondary { background: #334155; color: white; padding: 10px; border-radius: 8px; border:none; flex:1; cursor:pointer; }
-.btnDanger { background: #ef4444; color: white; padding: 10px; border-radius: 8px; border:none; flex:1; cursor:pointer; }
-
-/* הוספת טאב חדש */
-.newTabInput {
-    background: transparent;
-    border: none;
-    border-bottom: 2px solid #3b82f6;
-    color: white;
-    font-size: 1.2rem;
-    font-weight: bold;
-    width: 100px;
-    outline: none;
 }
