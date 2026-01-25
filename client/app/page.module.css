@@ -1,13 +1,16 @@
 /* client/app/page.module.css */
 
-/* 1. ייבוא הפונט Rubik מגוגל */
-@import url('https://fonts.googleapis.com/css2?family=Rubik:wght@900&display=swap');
+/* 1. ייבוא כל המשקלים של Rubik מגוגל */
+@import url('https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700;900&display=swap');
 
 .main {
   min-height: 100vh;
-  background-color: #0f111a;
+  background-color: #0f111a; /* רקע כהה עמוק */
   color: #e2e8f0;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  
+  /* הגדרת הפונט לכל האפליקציה */
+  font-family: 'Rubik', sans-serif;
+  
   display: flex;
   flex-direction: column;
   padding: 2rem;
@@ -15,7 +18,7 @@
   position: relative;
 }
 
-/* ... (שאר העיצובים של Header ו-Tooltip נשארים אותו דבר) ... */
+/* --- Header --- */
 .headerWrapper {
   display: flex;
   align-items: center;
@@ -55,6 +58,7 @@
   transform: translateY(-10px);
   transition: 0.3s;
   pointer-events: none;
+  z-index: 10;
 }
 
 .infoIconWrapper:hover .versionTooltip {
@@ -62,38 +66,26 @@
   transform: translateY(0);
 }
 
-/* --- השינוי בכותרת --- */
+/* --- הכותרת המעוצבת החדשה --- */
 .title {
-  font-family: 'Rubik', sans-serif; /* הפונט החדש */
-  font-weight: 800; /* משקל כבד מאוד */
-  font-size: 4rem; /* גודל מרשים */
+  font-weight: 800; /* משקל כבד מאוד (Black) */
+  font-size: 4rem;
   
   /* גרדיינט אפור מטאלי (10% עד 30%) */
   background: linear-gradient(180deg, #f3f4f6 0%, #9ca3af 100%);
   
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   
   margin: 0;
-  letter-spacing: -2px; /* צמצום רווחים למראה בלוקי */
+  letter-spacing: -2px;
   
-  /* צל עדין מאוד להבלטה */
+  /* צל עדין להבלטה */
   filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5));
 }
 
-/* ... (כל שאר הקובץ נשאר ללא שינוי - תעתיק את ההמשך מהקובץ הקודם שלך אם צריך, או שתחליף רק את הבלוק של .title) ... */
-
-/* אני מצרף כאן את המשך הקובץ ליתר ביטחון כדי שלא ימחק לך כלום */
-
-.subtitle {
-  font-size: 0.9rem;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  margin-top: 5px;
-  text-align: center;
-}
-
+/* --- Tabs Area --- */
 .tabsContainer {
   display: flex;
   align-items: center;
@@ -101,28 +93,36 @@
   margin-bottom: 20px;
   overflow-x: auto;
   padding-bottom: 10px;
+  /* גלילה נעימה ללא פס גלילה מכוער */
+  scrollbar-width: none; 
+}
+
+.tabsContainer::-webkit-scrollbar {
+  display: none;
 }
 
 .tab {
   background: transparent;
   color: #94a3b8;
   padding: 10px 20px;
-  font-size: 1.2rem;
-  font-weight: bold;
+  font-size: 1.1rem;
+  font-weight: 500;
   cursor: pointer;
   border: none;
   border-bottom: 3px solid transparent;
   transition: 0.3s;
   white-space: nowrap;
+  border-radius: 4px 4px 0 0;
 }
 
 .tab:hover {
   color: #cbd5e1;
+  background: rgba(255,255,255,0.03);
 }
 
 .activeTab {
   color: #fff;
-  /* border-bottom is handled inline via JS now */
+  /* הצבע של הגבול התחתון מטופל דרך ה-JS */
 }
 
 .addTabBtn {
@@ -151,12 +151,14 @@
     border: none;
     border-bottom: 2px solid #3b82f6;
     color: white;
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     font-weight: bold;
     width: 100px;
     outline: none;
+    font-family: inherit;
 }
 
+/* --- Main Content Area --- */
 .contentArea {
   background: #151923;
   border-radius: 16px;
@@ -175,7 +177,7 @@
 
 .sectionTitle {
   font-size: 2rem;
-  font-weight: bold;
+  font-weight: 700;
   color: white;
 }
 
@@ -192,6 +194,7 @@
   cursor: pointer;
   transition: 0.2s;
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  font-family: inherit;
 }
 
 .addItemBtn:hover {
@@ -199,6 +202,7 @@
   transform: translateY(-2px);
 }
 
+/* --- Items List --- */
 .itemsList {
   display: flex;
   flex-direction: column;
@@ -227,7 +231,7 @@
 .itemActions {
   display: flex;
   gap: 10px;
-  opacity: 0;
+  opacity: 0; /* מוסתר עד שעוברים עם העכבר */
   transition: 0.2s;
 }
 
@@ -254,6 +258,7 @@
   background: rgba(239, 68, 68, 0.1);
 }
 
+/* --- Divider --- */
 .divider {
   height: 1px;
   background: #334155;
@@ -262,6 +267,7 @@
   opacity: 0.5;
 }
 
+/* --- Quick Access (Buttons) --- */
 .quickAccessContainer {
   display: flex;
   justify-content: center;
@@ -277,11 +283,13 @@
   padding: 10px 24px;
   border-radius: 50px;
   text-decoration: none;
-  font-weight: 600;
+  font-weight: 500;
   display: flex;
   align-items: center;
   gap: 8px;
   transition: 0.2s;
+  /* חשוב לגרירה: */
+  touch-action: none; 
 }
 
 .quickBtn:hover {
@@ -309,6 +317,7 @@
   color: #3b82f6;
 }
 
+/* --- Visuals (Favorites) --- */
 .visualsGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -322,7 +331,7 @@
   overflow: hidden;
   position: relative;
   display: flex;
-  flex-direction: column;
+  flex-direction: column; /* תמונה מעל טקסט */
   transition: 0.3s;
   border: 1px solid transparent;
   cursor: pointer;
@@ -343,6 +352,7 @@
   display: block;
 }
 
+/* הכותרת הלבנה מתחת לתמונה */
 .visualTitle {
   padding: 12px 15px;
   font-size: 0.95rem;
@@ -353,7 +363,7 @@
   border-top: 1px solid rgba(255,255,255,0.05);
 }
 
-/* Modals */
+/* --- Modals --- */
 .modalOverlay {
   position: fixed;
   inset: 0;
@@ -373,7 +383,7 @@
   max-width: 450px;
   border: 1px solid #334155;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
-  text-align: right; /* יישור לימין במודל */
+  text-align: right;
 }
 
 .input, .select {
@@ -385,6 +395,7 @@
   border-radius: 8px;
   margin-bottom: 15px;
   font-size: 1rem;
+  font-family: inherit;
 }
 
 .input:focus {
@@ -398,11 +409,16 @@
   margin-top: 10px;
 }
 
-.btnPrimary { background: #3b82f6; color: white; padding: 10px; border-radius: 8px; border:none; flex:1; cursor:pointer; font-weight:bold; }
-.btnSecondary { background: #334155; color: white; padding: 10px; border-radius: 8px; border:none; flex:1; cursor:pointer; }
-.btnDanger { background: #ef4444; color: white; padding: 10px; border-radius: 8px; border:none; flex:1; cursor:pointer; }
+.btnPrimary { background: #3b82f6; color: white; padding: 10px; border-radius: 8px; border:none; flex:1; cursor:pointer; font-weight:bold; font-family: inherit; }
+.btnPrimary:hover { background: #2563eb; }
 
-/* Context Menu */
+.btnSecondary { background: #334155; color: white; padding: 10px; border-radius: 8px; border:none; flex:1; cursor:pointer; font-family: inherit; }
+.btnSecondary:hover { background: #475569; }
+
+.btnDanger { background: #ef4444; color: white; padding: 10px; border-radius: 8px; border:none; flex:1; cursor:pointer; font-family: inherit; }
+.btnDanger:hover { background: #dc2626; }
+
+/* --- Context Menu (Right Click) --- */
 .contextMenu {
   position: fixed;
   background: #1e293b;
