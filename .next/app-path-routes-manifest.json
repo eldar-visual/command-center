@@ -1,0 +1,15 @@
+{
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/admin/page": "/admin",
+  "/api/admin/users/route": "/api/admin/users",
+  "/api/auth/login/route": "/api/auth/login",
+  "/api/data/[id]/route": "/api/data/[id]",
+  "/api/data/route": "/api/data",
+  "/api/reorder/route": "/api/reorder",
+  "/api/spaces/[id]/route": "/api/spaces/[id]",
+  "/api/spaces/route": "/api/spaces",
+  "/favicon.ico/route": "/favicon.ico",
+  "/login/page": "/login",
+  "/page": "/"
+}

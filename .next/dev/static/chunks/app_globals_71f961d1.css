@@ -1,0 +1,130 @@
+/* [project]/app/globals.css [app-client] (css) */
+:root {
+  --bg-color: #0f172a;
+  --glass-bg: #1e293bb3;
+  --glass-border: #ffffff14;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --accent-blue: #3b82f6;
+  --accent-gradient: linear-gradient(135deg, #60a5fa 0%, #c084fc 100%);
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-primary);
+  direction: rtl;
+  margin: 0;
+  font-family: Heebo, sans-serif;
+}
+
+.glass {
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+h1.title {
+  background: var(--accent-gradient);
+  -webkit-text-fill-color: transparent;
+  -webkit-background-clip: text;
+  margin-bottom: .5rem;
+  font-size: 3rem;
+  font-weight: 900;
+}
+
+.tabs-container {
+  gap: 10px;
+  margin-bottom: 20px;
+  display: flex;
+  overflow-x: auto;
+}
+
+.tab {
+  cursor: pointer;
+  color: var(--text-secondary);
+  background: #ffffff0d;
+  border-radius: 12px;
+  padding: 10px 20px;
+  transition: all .3s;
+}
+
+.tab.active {
+  background-color: var(--accent-blue);
+  color: #fff;
+  font-weight: bold;
+}
+
+.main-content {
+  min-height: 400px;
+  padding: 30px;
+}
+
+.topic-header {
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  display: flex;
+}
+
+.link-item {
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 10px;
+  padding: 15px;
+  transition: all .3s;
+  display: flex;
+}
+
+.link-item:hover {
+  background: #ffffff0d;
+}
+
+.link-thumb {
+  object-fit: cover;
+  border-radius: 10px;
+  width: 60px;
+  height: 60px;
+}
+
+.btn-primary {
+  background: var(--accent-blue);
+  color: #fff;
+  cursor: pointer;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-weight: bold;
+}
+
+.pills-grid {
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 40px;
+  display: flex;
+}
+
+.pill {
+  border: 1px solid var(--glass-border);
+  color: #fff;
+  background: #ffffff08;
+  border-radius: 20px;
+  padding: 8px 16px;
+  font-size: .8rem;
+  text-decoration: none;
+  transition: all .2s;
+}
+
+.pill:hover {
+  border-color: var(--accent-blue);
+  transform: translateY(-2px);
+}
+
+/*# sourceMappingURL=app_globals_71f961d1.css.map*/
