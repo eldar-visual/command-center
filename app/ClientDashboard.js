@@ -11,7 +11,6 @@ import {
   Sun, Moon, Palette 
 } from 'lucide-react';
 
-/* הוספנו כאן את MouseSensor ו-TouchSensor במקום PointerSensor כללי! */
 import { DndContext, closestCenter, KeyboardSensor, MouseSensor, TouchSensor, useSensor, useSensors, DragOverlay } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy, horizontalListSortingStrategy, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -20,7 +19,6 @@ import styles from './page.module.css';
 
 const ICONS_MAP = { Folder, Home, Briefcase, Camera, Code, Book, Music, Video, ImageIcon, Mic, Heart, Star, Cloud, Shield, Zap, Target, Umbrella, Coffee, Globe, Key, MapPin };
 const AVAILABLE_COLORS = ['#ffffff', '#94a3b8', '#ef4444', '#f97316', '#f59e0b', '#10b981', '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899'];
-const BRAND_THEME_COLORS = ['#38bdf8', '#10b981', '#a855f7', '#f97316']; 
 
 const THEMES = {
   'dark-gray': { '--bg-main': '#0f111a', '--bg-sidebar': '#1e293b', '--bg-card': '#1e293b', '--bg-hover': 'rgba(255, 255, 255, 0.05)', '--border-color': '#334155', '--text-main': '#f8fafc', '--text-secondary': '#cbd5e1', '--text-muted': '#64748b', '--brand-color': '#38bdf8', '--card-float-bg': 'rgba(255, 255, 255, 0.02)', '--card-float-border': 'rgba(255, 255, 255, 0.05)', '--shadow-color': 'rgba(0,0,0,0.5)', '--modal-overlay': 'rgba(15, 17, 26, 0.8)', '--placeholder-bg': '#334155', '--play-overlay': 'rgba(0,0,0,0.4)' },
@@ -61,18 +59,11 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
   const router = useRouter();
   
   const [isMounted, setIsMounted] = useState(false);
+  const [isDataLoaded, setIsDataLoaded] = useState(false); // רמזור למניעת דריסת זיכרון
+  
   const [themeMode, setThemeMode] = useState('dark'); 
-  const [themeTint, setThemeTint] = useState('blue'); /* החלפתי את ברירת המחדל לכחול שאהבת! */
+  const [themeTint, setThemeTint] = useState('blue'); 
   const [showThemeMenu, setShowThemeMenu] = useState(false);
-
-  useEffect(() => { 
-    setIsMounted(true); 
-    if (window.innerWidth <= 768) { setSidebarOpen(false); }
-    const savedMode = localStorage.getItem('dash_theme_mode');
-    const savedTint = localStorage.getItem('dash_theme_tint');
-    if (savedMode) setThemeMode(savedMode);
-    if (savedTint) setThemeTint(savedTint);
-  }, []);
 
   const handleModeChange = (mode) => { setThemeMode(mode); localStorage.setItem('dash_theme_mode', mode); };
   const handleTintChange = (tint) => { setThemeTint(tint); localStorage.setItem('dash_theme_tint', tint); };
@@ -143,19 +134,52 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
   const currentSpaceId = activeSpace?._id || 'default';
   const currentSpaceTabs = activeSpace?.customTabs || [];
 
-  /* --- התיקון המרכזי לחוויית המובייל בגרירה --- */
-  const mouseSensor = useSensor(MouseSensor, {
-    activationConstraint: { distance: 5 }, // במחשב רגיל - גרירה מתחילה מיד
-  });
-  const touchSensor = useSensor(TouchSensor, {
-    activationConstraint: { 
-      delay: 200,     // בטלפון - חייבים ללחוץ 200 אלפיות השנייה כדי להתחיל גרירה (מפריד בין גלילה לגרירה)
-      tolerance: 5,   // האצבע יכולה לזוז טיפה בזמן ההמתנה
-    },
-  });
+  // ==========================================
+  // שיפור הזיכרון - שאיבה מרוכזת פעם אחת בלבד!
+  // ==========================================
+  useEffect(() => { 
+    setIsMounted(true); 
+    if (window.innerWidth <= 768) { setSidebarOpen(false); }
+    
+    // שאיבת הגדרות עיצוב
+    const savedMode = localStorage.getItem('dash_theme_mode');
+    const savedTint = localStorage.getItem('dash_theme_tint');
+    if (savedMode) setThemeMode(savedMode);
+    if (savedTint) setThemeTint(savedTint);
+
+    // שאיבת מיקום אחרון (מרחב, נושא, ולשונית)
+    const savedSpaceId = localStorage.getItem('dash_spaceId');
+    const savedTab = localStorage.getItem('dash_tab');
+    const savedCategory = localStorage.getItem('dash_category');
+    
+    let targetSpace = initialSpaces.find(s => s._id === savedSpaceId) || initialSpaces[0] || defaultSpace;
+    setActiveSpace(targetSpace);
+    
+    const spaceTabs = targetSpace?.customTabs || [];
+    if (savedTab && savedTab !== 'null' && spaceTabs.includes(savedTab)) { 
+        setActiveCustomTab(savedTab); 
+    } else if (spaceTabs.length > 0) { 
+        setActiveCustomTab(spaceTabs[0]); 
+    } else { 
+        setActiveCustomTab(null); 
+    }
+
+    if (savedCategory) setActiveCategoryTab(savedCategory);
+
+    // הרמזור נדלק - עכשיו מותר למערכת להתחיל לשמור שינויים חדשים
+    setIsDataLoaded(true); 
+  }, [initialSpaces]);
+
+  // ==========================================
+  // שמירת המיקום בזיכרון (מוגנת על ידי הרמזור)
+  // ==========================================
+  useEffect(() => { if (isDataLoaded && activeSpace) localStorage.setItem('dash_spaceId', activeSpace._id); }, [activeSpace, isDataLoaded]);
+  useEffect(() => { if (isDataLoaded) localStorage.setItem('dash_tab', activeCustomTab === null ? 'null' : activeCustomTab); }, [activeCustomTab, isDataLoaded]);
+  useEffect(() => { if (isDataLoaded) localStorage.setItem('dash_category', activeCategoryTab); }, [activeCategoryTab, isDataLoaded]);
+
+  const mouseSensor = useSensor(MouseSensor, { activationConstraint: { distance: 5 } });
+  const touchSensor = useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } });
   const keyboardSensor = useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates });
-  
-  // מאגדים את כל החיישנים ביחד
   const sensors = useSensors(mouseSensor, touchSensor, keyboardSensor);
 
   const handleLogout = () => { document.cookie = "isLoggedIn=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;"; window.location.href = '/login'; };
@@ -241,7 +265,6 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
       
       <div className={styles.mainLayout} style={activeThemeStyles} onClick={closeContextMenus}>
         
-        {/* הרקע המוצלל שסוגר את תפריט הצד במובייל */}
         <div className={`${styles.mobileSidebarOverlay} ${isSidebarOpen ? styles.show : ''}`} onClick={() => setSidebarOpen(false)}></div>
 
         <aside className={`${styles.sidebar} ${isSidebarOpen ? styles.open : styles.closed}`}>
@@ -319,7 +342,7 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
                 {showInfoTooltip && (
                   <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: '10px', padding: '15px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '8px', boxShadow: '0 10px 15px -3px var(--shadow-color)', color: 'var(--text-secondary)', fontSize: '0.85rem', width: 'max-content', zIndex: 100, textAlign: 'right' }}>
                     <strong style={{ display: 'block', color: 'var(--text-main)', marginBottom: '8px', fontSize: '1.05rem' }}>אלדר ויז'ואל</strong>
-                    <div style={{ marginBottom: '4px' }}>גרסת מערכת: 3.2.0</div>
+                    <div style={{ marginBottom: '4px' }}>גרסת מערכת: 3.2.6</div>
                     <div style={{ color: 'var(--text-muted)' }}>&copy; 2026 כל הזכויות שמורות.</div>
                   </div>
                 )}
