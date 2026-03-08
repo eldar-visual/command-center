@@ -215,17 +215,41 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
   
   const handleDeleteTabClick = () => { setTabToDelete(tabContextMenu.tabName); setDeleteTabModalOpen(true); closeContextMenus(); };
   
-  const executeDeleteTab = async () => { 
+ const executeDeleteTab = async () => { 
     if (!tabToDelete) return; 
-    const updatedTabs = currentSpaceTabs.filter(t => t !== tabToDelete); const updatedSpace = { ...activeSpace, customTabs: updatedTabs }; 
-    setSpaces(spaces.map(s => s._id === activeSpace._id ? updatedSpace : s)); setActiveSpace(updatedSpace); 
+    const updatedTabs = currentSpaceTabs.filter(t => t !== tabToDelete); 
+    const updatedSpace = { ...activeSpace, customTabs: updatedTabs }; 
+    setSpaces(spaces.map(s => s._id === activeSpace._id ? updatedSpace : s)); 
+    setActiveSpace(updatedSpace); 
+    
     const itemsToDelete = items.filter(i => i.spaceId === activeSpace._id && i.customTab === tabToDelete); 
     setItems(items.filter(i => !(i.spaceId === activeSpace._id && i.customTab === tabToDelete))); 
     const nextTab = updatedTabs.length > 0 ? updatedTabs[0] : null;
     setActiveCustomTab(nextTab); 
     localStorage.setItem('dash_tab', nextTab || 'null'); 
-    setDeleteTabModalOpen(false); setTabToDelete(null); 
-    if (activeSpace._id !== 'default') { try { await fetch(`/api/spaces/${activeSpace._id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customTabs: updatedTabs }) }); await Promise.all(itemsToDelete.map(item => fetch(`/api/data/${item._id}`, { method: 'DELETE' }))); } catch (error) {} } 
+    setDeleteTabModalOpen(false); 
+    setTabToDelete(null); 
+    
+    if (activeSpace._id !== 'default') { 
+      try { 
+        const res = await fetch(`/api/spaces/${activeSpace._id}`, { 
+          method: 'PUT', 
+          headers: { 'Content-Type': 'application/json' }, 
+          body: JSON.stringify({ customTabs: updatedTabs }) 
+        }); 
+        if (!res.ok) throw new Error('Failed to update tabs on server');
+
+        // מחיקת כל הפריטים שהיו בתוך הנושא
+        await Promise.all(itemsToDelete.map(async (item) => {
+          const itemRes = await fetch(`/api/data/${item._id}`, { method: 'DELETE' });
+          if (!itemRes.ok) console.error(`Failed to delete item ${item._id}`);
+        })); 
+      } catch (error) {
+        console.error("Failed to delete tab:", error);
+        setToastMessage('שגיאה: פעולת המחיקה נכשלה בשרת');
+        setTimeout(() => setToastMessage(null), 3000);
+      } 
+    } 
   };
 
   const handleAddSpace = async (e) => { 
@@ -251,7 +275,10 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
   
   const executeDeleteSpace = async () => { 
     if (!spaceToDelete) return; 
-    const targetSpaceId = spaceToDelete._id; const updatedSpaces = spaces.filter(s => s._id !== targetSpaceId); 
+    const targetSpaceId = spaceToDelete._id; 
+    
+    // קודם כל עושים את העדכון הוויזואלי (Optimistic Update)
+    const updatedSpaces = spaces.filter(s => s._id !== targetSpaceId); 
     setSpaces(updatedSpaces); 
     if (activeSpace._id === targetSpaceId) { 
         const nextSpace = updatedSpaces[0] || null; 
@@ -261,8 +288,23 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
         localStorage.setItem('dash_spaceId', nextSpace ? nextSpace._id : 'default'); 
         localStorage.setItem('dash_tab', nextTab || 'null');
     } 
-    setDeleteSpaceModalOpen(false); setSpaceToDelete(null); 
-    if (targetSpaceId !== 'default') { fetch(`/api/spaces/${targetSpaceId}`, { method: 'DELETE' }); } 
+    setDeleteSpaceModalOpen(false); 
+    setSpaceToDelete(null); 
+    
+    // שליחה לשרת עם טיפול בשגיאות
+    if (targetSpaceId !== 'default') { 
+      try {
+        const res = await fetch(`/api/spaces/${targetSpaceId}`, { method: 'DELETE' });
+        if (!res.ok) {
+          throw new Error('Server failed to delete space');
+        }
+      } catch (error) {
+        console.error("Failed to delete space:", error);
+        // במערכת מקצועית, כאן היינו מחזירים את המרחב למסך או מציגים הודעת שגיאה
+        setToastMessage('שגיאה: לא הצלחנו למחוק את המרחב מהשרת');
+        setTimeout(() => setToastMessage(null), 3000);
+      }
+    } 
   };
 
   const handleAddItem = async (e) => { e.preventDefault(); if (!newItemData.title || !newItemData.link) return; const currentPinnedCount = items.filter(i => i.isFavorite && i.isPinnedToMain && (i.spaceId || 'default') === currentSpaceId).length; const shouldPin = newItemSection === 'favorites' && currentPinnedCount < 10; const tempId = Date.now().toString(); const newItem = { _id: tempId, title: newItemData.title, link: newItemData.link, section: newItemSection === 'favorites' ? 'links' : newItemSection, isFavorite: newItemSection === 'favorites', isPinnedToMain: shouldPin, spaceId: currentSpaceId, customTab: newItemSection === 'favorites' ? null : activeCustomTab, order: items.length }; setItems([...items, newItem]); setAddItemModalOpen(false); setNewItemData({ title: '', link: '' }); try { const { _id, ...itemToSave } = newItem; const res = await fetch('/api/data', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(itemToSave) }); if (res.ok) { const savedItem = await res.json(); setItems(prev => prev.map(i => i._id === tempId ? { ...i, _id: savedItem._id } : i)); } } catch (error) {} };

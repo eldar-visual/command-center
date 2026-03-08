@@ -22,3 +22,24 @@ export async function PUT(request, { params }) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
+export async function DELETE(request, { params }) {
+  await dbConnect();
+  const resolvedParams = await params;
+  const id = resolvedParams.id;
+
+  if (id === 'default') {
+    return NextResponse.json({ message: 'Cannot delete default space' }, { status: 400 });
+  }
+
+  try {
+    const deletedSpace = await Space.findByIdAndDelete(id);
+    if (!deletedSpace) {
+      return NextResponse.json({ message: 'Space not found' }, { status: 404 });
+    }
+    return NextResponse.json({ message: 'Space deleted successfully' }, { status: 200 });
+  } catch (error) {
+    console.error("Error deleting space:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
