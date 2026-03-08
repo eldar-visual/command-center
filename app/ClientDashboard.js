@@ -217,37 +217,49 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
   
  const executeDeleteTab = async () => { 
     if (!tabToDelete) return; 
+    
+    // 1. מסירים את הנושא ממערך הנושאים של המרחב
     const updatedTabs = currentSpaceTabs.filter(t => t !== tabToDelete); 
     const updatedSpace = { ...activeSpace, customTabs: updatedTabs }; 
     setSpaces(spaces.map(s => s._id === activeSpace._id ? updatedSpace : s)); 
     setActiveSpace(updatedSpace); 
     
-    const itemsToDelete = items.filter(i => i.spaceId === activeSpace._id && i.customTab === tabToDelete); 
-    setItems(items.filter(i => !(i.spaceId === activeSpace._id && i.customTab === tabToDelete))); 
+    // 2. במקום למחוק, מעבירים את הפריטים לסל המחזור על ידי שינוי הסטטוס המקומי
+    const itemsToRecycle = items.filter(i => i.spaceId === activeSpace._id && i.customTab === tabToDelete); 
+    setItems(items.map(i => 
+      (i.spaceId === activeSpace._id && i.customTab === tabToDelete) 
+        ? { ...i, isDeleted: true } 
+        : i
+    )); 
+    
+    // 3. מנווטים לנושא הבא (או ל-null אם אין)
     const nextTab = updatedTabs.length > 0 ? updatedTabs[0] : null;
     setActiveCustomTab(nextTab); 
     localStorage.setItem('dash_tab', nextTab || 'null'); 
+    
     setDeleteTabModalOpen(false); 
     setTabToDelete(null); 
     
+    // 4. עדכון השרת
     if (activeSpace._id !== 'default') { 
       try { 
-        const res = await fetch(`/api/spaces/${activeSpace._id}`, { 
+        // שומרים את מערך הנושאים החדש ללא הנושא שנמחק
+        await fetch(`/api/spaces/${activeSpace._id}`, { 
           method: 'PUT', 
           headers: { 'Content-Type': 'application/json' }, 
           body: JSON.stringify({ customTabs: updatedTabs }) 
         }); 
-        if (!res.ok) throw new Error('Failed to update tabs on server');
-
-        // מחיקת כל הפריטים שהיו בתוך הנושא
-        await Promise.all(itemsToDelete.map(async (item) => {
-          const itemRes = await fetch(`/api/data/${item._id}`, { method: 'DELETE' });
-          if (!itemRes.ok) console.error(`Failed to delete item ${item._id}`);
-        })); 
+        
+        // מעבירים את הפריטים לסל בשרת (שימוש ב-PUT במקום DELETE)
+        await Promise.all(itemsToRecycle.map(item => 
+          fetch(`/api/data/${item._id}`, { 
+            method: 'PUT', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ isDeleted: true }) 
+          })
+        )); 
       } catch (error) {
-        console.error("Failed to delete tab:", error);
-        setToastMessage('שגיאה: פעולת המחיקה נכשלה בשרת');
-        setTimeout(() => setToastMessage(null), 3000);
+        console.error("Failed to move items to recycle bin:", error);
       } 
     } 
   };
@@ -598,11 +610,42 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
           </div>
         )}
 
-        {spaceContextMenu.visible && ( <div className={styles.contextMenu} style={{ top: spaceContextMenu.y, left: spaceContextMenu.x }}><button onClick={openRenameSpace} className={styles.contextMenuItem}><Edit size={16} /> שנה שם</button><button onClick={() => openSpaceSettings(spaceContextMenu.space)} className={styles.contextMenuItem}><Settings size={16} /> הגדרות ועיצוב</button><button onClick={handleDeleteSpaceClick} className={`${styles.contextMenuItem} ${styles.delete}`}><Trash2 size={16} /> מחק מרחב</button></div> )}
-        {tabContextMenu.visible && ( <div className={styles.contextMenu} style={{ top: tabContextMenu.y, left: tabContextMenu.x }}><button onClick={openEditTab} className={styles.contextMenuItem}><Edit size={16} /> שנה שם נושא</button><button onClick={handleDeleteTabClick} className={`${styles.contextMenuItem} ${styles.delete}`}><Trash2 size={16} /> מחק נושא</button></div> )}
-
+        {spaceContextMenu.visible && (
+            <div className={styles.contextMenu} style={{ top: spaceContextMenu.y, left: spaceContextMenu.x }}>
+            <button onClick={openRenameSpace} className={styles.contextMenuItem}><Edit size={16} /> שנה שם</button>
+            <button onClick={() => openSpaceSettings(spaceContextMenu.space)} className={styles.contextMenuItem}><Settings size={16} /> הגדרות ועיצוב</button>
+            <button onClick={handleDeleteSpaceClick} className={`${styles.contextMenuItem} ${styles.delete}`}><Trash2 size={16} /> מחק מרחב</button>
+          </div>
+        )}
+        {tabContextMenu.visible && (
+            <div className={styles.contextMenu} style={{ top: tabContextMenu.y, left: tabContextMenu.x }}>
+            <button onClick={openEditTab} className={styles.contextMenuItem}><Edit size={16} /> שנה שם נושא</button>
+            <button onClick={handleDeleteTabClick} className={`${styles.contextMenuItem} ${styles.delete}`}><Trash2 size={16} /> מחק נושא</button>
+          </div>
+        )}
+{isDeleteTabModalOpen && ( 
+          <div className={styles.modalOverlay} onClick={() => setDeleteTabModalOpen(false)}>
+            <div className={styles.modalContent} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px', textAlign: 'center', border: '1px solid var(--border-color)' }}>
+              <button onClick={() => setDeleteTabModalOpen(false)} className={styles.closeModal}><X size={20}/></button>
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '15px' }}>
+                <Trash2 size={48} color="var(--text-muted)" />
+              </div>
+              <h2 style={{ marginBottom: '15px', color: 'var(--text-main)' }}>מחיקת נושא</h2>
+              <p style={{ color: 'var(--text-secondary)', marginBottom: '25px', lineHeight: '1.6', fontSize: '0.95rem' }}>
+                האם אתה בטוח שברצונך למחוק את הנושא <strong>"{tabToDelete}"</strong>?<br/>
+                <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                  המסמכים והסרטונים שבו יועברו לסל המחזור, והנושא עצמו יימחק.
+                </span>
+              </p>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button onClick={() => setDeleteTabModalOpen(false)} className={styles.submitModalBtn} style={{ background: 'var(--bg-hover)', color: 'var(--text-main)', flex: 1 }}>ביטול</button>
+                <button onClick={executeDeleteTab} className={styles.submitModalBtn} style={{ background: '#ef4444', color: 'white', flex: 1, border: 'none' }}>כן, מחק נושא</button>
+              </div>
+            </div>
+          </div> 
+        )}
         {isDeleteSpaceModalOpen && ( <div className={styles.modalOverlay} onClick={() => setDeleteSpaceModalOpen(false)}><div className={styles.modalContent} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px', textAlign: 'center', border: '1px solid #ef4444' }}><button onClick={() => setDeleteSpaceModalOpen(false)} className={styles.closeModal}><X size={20}/></button><div style={{ display: 'flex', justifyContent: 'center', marginBottom: '15px' }}><Trash2 size={48} color="#ef4444" /></div><h2 style={{ marginBottom: '15px', color: 'var(--text-main)' }}>מחיקת מרחב</h2><p style={{ color: 'var(--text-secondary)', marginBottom: '25px', lineHeight: '1.6', fontSize: '0.95rem' }}>האם אתה בטוח שברצונך למחוק את המרחב <strong>"{spaceToDelete?.name}"</strong>?<br/><span style={{ color: '#ef4444', fontSize: '0.85rem' }}>פעולה זו תמחק את כל הנושאים, המסמכים והסרטונים שבו לצמיתות ולא ניתנת לביטול.</span></p><div style={{ display: 'flex', gap: '10px' }}><button onClick={() => setDeleteSpaceModalOpen(false)} className={styles.submitModalBtn} style={{ background: 'var(--bg-hover)', color: 'var(--text-main)', flex: 1 }}>ביטול</button><button onClick={executeDeleteSpace} className={styles.submitModalBtn} style={{ background: '#ef4444', color: 'white', flex: 1, border: 'none' }}>כן, מחק מרחב</button></div></div></div> )}
-        {isDeleteTabModalOpen && ( <div className={styles.modalOverlay} onClick={() => setDeleteTabModalOpen(false)}><div className={styles.modalContent} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px', textAlign: 'center', border: '1px solid #ef4444' }}><button onClick={() => setDeleteTabModalOpen(false)} className={styles.closeModal}><X size={20}/></button><div style={{ display: 'flex', justifyContent: 'center', marginBottom: '15px' }}><Trash2 size={48} color="#ef4444" /></div><h2 style={{ marginBottom: '15px', color: 'var(--text-main)' }}>מחיקת נושא</h2><p style={{ color: 'var(--text-secondary)', marginBottom: '25px', lineHeight: '1.6', fontSize: '0.95rem' }}>האם אתה בטוח שברצונך למחוק את הנושא <strong>"{tabToDelete}"</strong>?<br/><span style={{ color: '#ef4444', fontSize: '0.85rem' }}>כל המסמכים והסרטונים המשויכים אליו יימחקו לצמיתות.</span></p><div style={{ display: 'flex', gap: '10px' }}><button onClick={() => setDeleteTabModalOpen(false)} className={styles.submitModalBtn} style={{ background: 'var(--bg-hover)', color: 'var(--text-main)', flex: 1 }}>ביטול</button><button onClick={executeDeleteTab} className={styles.submitModalBtn} style={{ background: '#ef4444', color: 'white', flex: 1, border: 'none' }}>כן, מחק נושא</button></div></div></div> )}
+
         {isMoveModalOpen && ( <div className={styles.modalOverlay} onClick={() => setMoveModalOpen(false)}><div className={styles.modalContent} onClick={(e) => e.stopPropagation()}><button onClick={() => setMoveModalOpen(false)} className={styles.closeModal}><X size={20}/></button><h2>העברת פריט: {itemToMove?.title}</h2><form onSubmit={handleMoveSubmit} className={styles.modalForm}><div style={{ marginBottom: '15px' }}><label style={{ display: 'block', color: 'var(--text-secondary)', marginBottom: '8px', fontSize: '0.9rem' }}>בחר מרחב יעד:</label><select value={moveDestination.spaceId} onChange={(e) => { const newSpaceId = e.target.value; const targetSpace = spaces.find(s => s._id === newSpaceId); setMoveDestination({ spaceId: newSpaceId, customTab: targetSpace?.customTabs?.[0] || '' }); }} style={{ width: '100%', padding: '10px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', borderRadius: '6px' }}>{spaces.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}</select></div>{itemToMove?.section !== 'links' && ( <div style={{ marginBottom: '20px' }}><label style={{ display: 'block', color: 'var(--text-secondary)', marginBottom: '8px', fontSize: '0.9rem' }}>בחר נושא יעד:</label><select value={moveDestination.customTab} onChange={(e) => setMoveDestination({ ...moveDestination, customTab: e.target.value })} style={{ width: '100%', padding: '10px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', borderRadius: '6px' }}>{spaces.find(s => s._id === moveDestination.spaceId)?.customTabs?.map(tab => ( <option key={tab} value={tab}>{tab}</option> ))}{(!spaces.find(s => s._id === moveDestination.spaceId)?.customTabs || spaces.find(s => s._id === moveDestination.spaceId)?.customTabs.length === 0) && ( <option value="" disabled>אין נושאים במרחב זה</option> )}</select></div>)}<button type="submit" className={styles.submitModalBtn} disabled={itemToMove?.section !== 'links' && !moveDestination.customTab}>העבר עכשיו</button></form></div></div> )}
         {isEditTabModalOpen && ( <div className={styles.modalOverlay} onClick={() => setEditTabModalOpen(false)}><div className={styles.modalContent} onClick={(e) => e.stopPropagation()}><button onClick={() => setEditTabModalOpen(false)} className={styles.closeModal}><X size={20}/></button><h2>שינוי שם נושא</h2><form onSubmit={handleSaveEditTab} className={styles.modalForm}><input type="text" value={editTabName} onChange={e => setEditTabName(e.target.value)} required autoFocus /><button type="submit" className={styles.submitModalBtn}>שמור שם חדש</button></form></div></div> )}
         {isSettingsModalOpen && ( <div className={styles.modalOverlay} onClick={() => setSettingsModalOpen(false)}><div className={styles.modalContent} style={{ maxWidth: '450px' }} onClick={(e) => e.stopPropagation()}><button onClick={() => setSettingsModalOpen(false)} className={styles.closeModal}><X size={20}/></button><h2 style={{ marginBottom: '20px' }}>הגדרות ועיצוב מרחב</h2><form onSubmit={handleSaveSpaceSettings} className={styles.modalForm}><div style={{ marginBottom: '15px' }}><label style={{ display: 'block', color: 'var(--text-secondary)', marginBottom: '8px', fontSize: '0.9rem' }}>שם המרחב:</label><input type="text" value={editSpaceData.name} onChange={e => setEditSpaceData({...editSpaceData, name: e.target.value})} required /></div><div style={{ marginBottom: '15px' }}><label style={{ display: 'block', color: 'var(--text-secondary)', marginBottom: '8px', fontSize: '0.9rem' }}>בחר אייקון:</label><div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', background: 'var(--bg-main)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>{Object.keys(ICONS_MAP).map(iconKey => { const IconCmp = ICONS_MAP[iconKey]; const isSelected = editSpaceData.iconName === iconKey; return ( <button key={iconKey} type="button" onClick={() => setEditSpaceData({...editSpaceData, iconName: iconKey})} style={{ background: isSelected ? 'var(--bg-hover)' : 'transparent', border: isSelected ? `1px solid ${editSpaceData.color}` : '1px solid transparent', padding: '8px', borderRadius: '6px', cursor: 'pointer', transition: 'all 0.2s' }}><IconCmp size={20} color={isSelected ? editSpaceData.color : 'var(--text-muted)'} /></button> )})}</div></div><div style={{ marginBottom: '25px' }}><label style={{ display: 'block', color: 'var(--text-secondary)', marginBottom: '8px', fontSize: '0.9rem' }}>צבע ייחודי:</label><div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>{AVAILABLE_COLORS.map(color => ( <button key={color} type="button" onClick={() => setEditSpaceData({...editSpaceData, color: color})} style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: color, border: editSpaceData.color === color ? '3px solid var(--text-main)' : '3px solid transparent', cursor: 'pointer', outline: editSpaceData.color === color ? `1px solid ${color}` : 'none' }} /> ))}</div></div><button type="submit" className={styles.submitModalBtn} style={{ width: '100%' }}>שמור שינויים</button></form></div></div> )}
