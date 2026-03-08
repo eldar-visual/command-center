@@ -434,8 +434,49 @@ const handleRestoreItem = async (itemId) => {
           </nav>
           
           <div className={styles.sidebarFooter} style={{ padding: isSidebarOpen ? '20px 20px 40px 20px' : '20px 0 40px 0', borderTop: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-            <div onClick={() => setIsRecycleBinOpen(true)} style={{ display: 'flex', alignItems: 'center', justifyContent: isSidebarOpen ? 'flex-start' : 'center', width: isSidebarOpen ? 'calc(100% - 20px)' : '100%', margin: '0 auto', cursor: 'pointer', color: 'var(--text-muted)', transition: 'color 0.2s' }} title={!isSidebarOpen ? "סל מחזור" : ""} onMouseEnter={(e) => e.currentTarget.style.color = 'var(--brand-color)'} onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}>
-              <Trash2 size={18} /> {isSidebarOpen && <span style={{ marginRight: '10px', whiteSpace: 'nowrap' }}>סל מחזור</span>}
+         <div 
+              onClick={() => setIsRecycleBinOpen(true)} 
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: isSidebarOpen ? 'flex-start' : 'center', 
+                width: isSidebarOpen ? 'calc(100% - 20px)' : '100%', 
+                margin: '0 auto', 
+                cursor: 'pointer', 
+                padding: '8px 10px',
+                borderRadius: '8px',
+                position: 'relative',
+                // אם יש פריטים: צבע בולט ורקע עדין. אם אין: אפור רגיל
+                color: deletedItems.length > 0 ? 'var(--brand-color)' : 'var(--text-muted)', 
+                background: deletedItems.length > 0 ? 'var(--card-float-bg)' : 'transparent',
+                transition: 'all 0.2s' 
+              }} 
+              title={!isSidebarOpen ? `סל מחזור ${deletedItems.length > 0 ? `(${deletedItems.length})` : ""}` : ""} 
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = 'var(--brand-color)';
+                e.currentTarget.style.background = 'var(--bg-hover)';
+              }} 
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = deletedItems.length > 0 ? 'var(--brand-color)' : 'var(--text-muted)';
+                e.currentTarget.style.background = deletedItems.length > 0 ? 'var(--card-float-bg)' : 'transparent';
+              }}
+            >
+              <Trash2 size={18} /> 
+              {isSidebarOpen && (
+                <span style={{ marginRight: '10px', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', flex: 1, justifyContent: 'space-between' }}>
+                  סל מחזור
+                  {/* בועה קטנה עם מספר הפריטים (רק אם יש משהו בסל) */}
+                  {deletedItems.length > 0 && (
+                    <span style={{ background: 'var(--brand-color)', color: '#fff', fontSize: '0.75rem', padding: '2px 8px', borderRadius: '12px', fontWeight: 'bold' }}>
+                      {deletedItems.length}
+                    </span>
+                  )}
+                </span>
+              )}
+              {/* נקודת חיווי קטנה כשהתפריט סגור (במובייל/מצומצם) ויש פריטים */}
+              {!isSidebarOpen && deletedItems.length > 0 && (
+                <span style={{ position: 'absolute', top: '4px', right: '4px', width: '8px', height: '8px', background: 'var(--brand-color)', borderRadius: '50%' }}></span>
+              )}
             </div>
             <div onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', justifyContent: isSidebarOpen ? 'flex-start' : 'center', width: isSidebarOpen ? 'calc(100% - 20px)' : '100%', margin: '0 auto', cursor: 'pointer', color: 'var(--text-muted)', transition: 'color 0.2s' }} title={!isSidebarOpen ? `התנתקות (${user.name})` : ""} onMouseEnter={(e) => e.currentTarget.style.color = '#ef4444'} onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}>
               <LogOut size={18} /> {isSidebarOpen && <span style={{ marginRight: '10px', whiteSpace: 'nowrap' }}>התנתקות ({user.name})</span>}
