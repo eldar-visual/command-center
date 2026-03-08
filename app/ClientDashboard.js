@@ -125,6 +125,10 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
   const [isRecycleBinOpen, setIsRecycleBinOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
 
+  const [isMoveTabModalOpen, setMoveTabModalOpen] = useState(false);
+  const [tabToMove, setTabToMove] = useState('');
+  const [moveTabDestinationSpaceId, setMoveTabDestinationSpaceId] = useState('');
+
   const currentSpaceId = activeSpace?._id || 'default';
   const currentSpaceTabs = activeSpace?.customTabs || [];
 
@@ -371,7 +375,83 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
   const togglePinToMain = async (e, itemId) => { e.preventDefault(); e.stopPropagation(); const currentPinnedCount = items.filter(i => i.isFavorite && i.isPinnedToMain && (i.spaceId || 'default') === currentSpaceId).length; let newPinState = false; let shouldUpdate = false; const updatedItems = items.map(item => { if (item._id === itemId) { if (!item.isPinnedToMain && currentPinnedCount >= 10) { setMaxPinsModalOpen(true); return item; } newPinState = !item.isPinnedToMain; shouldUpdate = true; return { ...item, isPinnedToMain: newPinState }; } return item; }); setItems(updatedItems); if (shouldUpdate && !items.find(i=>i._id===itemId)?.isGlobal) { fetch(`/api/data/${itemId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ isPinnedToMain: newPinState }) }); } };
   const openMoveModal = () => { if (!contextMenu.item) return; setItemToMove(contextMenu.item); setMoveDestination({ spaceId: currentSpaceId, customTab: contextMenu.item.customTab || '' }); setMoveModalOpen(true); closeContextMenus(); };
   const handleMoveSubmit = async (e) => { e.preventDefault(); if (!itemToMove) return; const updatedItems = items.map(i => i._id === itemToMove._id ? { ...i, spaceId: moveDestination.spaceId, customTab: moveDestination.customTab || null } : i ); setItems(updatedItems); setMoveModalOpen(false); try { await fetch(`/api/data/${itemToMove._id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ spaceId: moveDestination.spaceId, customTab: moveDestination.customTab || null }) }); } catch (error) {} };
+const handleOpenMoveTabModal = () => { 
+    if (!tabContextMenu.tabName) return;
+    setTabToMove(tabContextMenu.tabName);
+    // בוחר אוטומטית את המרחב הראשון שהוא לא המרחב הנוכחי (אם יש כזה)
+    const availableSpaces = spaces.filter(s => s._id !== activeSpace._id);
+    setMoveTabDestinationSpaceId(availableSpaces.length > 0 ? availableSpaces[0]._id : '');
+    setMoveTabModalOpen(true); 
+    closeContextMenus(); 
+  };
 
+  const executeMoveTab = async (e) => {
+    e.preventDefault();
+    if (!tabToMove || !moveTabDestinationSpaceId) return;
+
+    const sourceSpaceId = activeSpace._id;
+    const destSpaceId = moveTabDestinationSpaceId;
+
+    const sourceSpace = spaces.find(s => s._id === sourceSpaceId);
+    const destSpace = spaces.find(s => s._id === destSpaceId);
+    if (!sourceSpace || !destSpace) return;
+
+    // מניעת כפילויות: מוודא שאין כבר נושא באותו שם במרחב היעד
+    if (destSpace.customTabs?.includes(tabToMove)) {
+      setToastMessage({ text: 'שגיאה: נושא בשם זה כבר קיים במרחב היעד', type: 'delete' });
+      setTimeout(() => setToastMessage(null), 3000);
+      return;
+    }
+
+    // 1. עדכון הנושאים במרחבים המקומיים
+    const updatedSourceTabs = sourceSpace.customTabs.filter(t => t !== tabToMove);
+    const updatedDestTabs = [...(destSpace.customTabs || []), tabToMove];
+
+    const updatedSpaces = spaces.map(s => {
+      if (s._id === sourceSpaceId) return { ...s, customTabs: updatedSourceTabs };
+      if (s._id === destSpaceId) return { ...s, customTabs: updatedDestTabs };
+      return s;
+    });
+
+    setSpaces(updatedSpaces);
+    setActiveSpace(updatedSpaces.find(s => s._id === sourceSpaceId));
+
+    // 2. עדכון הפריטים (מסמכים/סרטונים) ששייכים לנושא הזה
+    const itemsToMove = items.filter(i => i.spaceId === sourceSpaceId && i.customTab === tabToMove);
+    const updatedItems = items.map(i => 
+      (i.spaceId === sourceSpaceId && i.customTab === tabToMove)
+        ? { ...i, spaceId: destSpaceId }
+        : i
+    );
+    setItems(updatedItems);
+
+    // 3. ניווט לנושא הבא במרחב הנוכחי
+    if (activeCustomTab === tabToMove) {
+      const nextTab = updatedSourceTabs.length > 0 ? updatedSourceTabs[0] : null;
+      setActiveCustomTab(nextTab);
+      localStorage.setItem('dash_tab', nextTab || 'null');
+    }
+
+    setMoveTabModalOpen(false);
+    setTabToMove('');
+    setToastMessage({ text: 'הנושא והתוכן שלו הועברו בהצלחה!', type: 'success' });
+    setTimeout(() => setToastMessage(null), 3000);
+
+    // 4. שליחת העדכונים לשרת
+    try {
+      if (sourceSpaceId !== 'default') {
+        fetch(`/api/spaces/${sourceSpaceId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customTabs: updatedSourceTabs }) });
+      }
+      if (destSpaceId !== 'default') {
+        fetch(`/api/spaces/${destSpaceId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customTabs: updatedDestTabs }) });
+      }
+      await Promise.all(itemsToMove.map(item => 
+        fetch(`/api/data/${item._id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ spaceId: destSpaceId }) })
+      ));
+    } catch (error) {
+      console.error("Failed to move tab to new space:", error);
+    }
+  };
   const getFavicon = (url) => { try { return `https://www.google.com/s2/favicons?domain=${new URL(url).hostname}&sz=128`; } catch { return '/globe.svg'; } };
   const getThumbnail = (item) => { if (item.imageUrl) return item.imageUrl; const videoLink = item.link || item.url; if (videoLink) { const ytMatch = videoLink.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|shorts\/|watch\?v=|watch\?.+&v=))([^&?]+)/); if (ytMatch) return `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`; } return null; };
 
@@ -659,11 +739,12 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
             <button onClick={handleDeleteSpaceClick} className={`${styles.contextMenuItem} ${styles.delete}`}><Trash2 size={16} /> מחק מרחב</button>
           </div>
         )}
-        {tabContextMenu.visible && (
-            <div className={styles.contextMenu} style={{ top: tabContextMenu.y, left: tabContextMenu.x }}>
+      {tabContextMenu.visible && ( 
+          <div className={styles.contextMenu} style={{ top: tabContextMenu.y, left: tabContextMenu.x }}>
             <button onClick={openEditTab} className={styles.contextMenuItem}><Edit size={16} /> שנה שם נושא</button>
-            <button onClick={handleDeleteTabClick} className={`${styles.contextMenuItem} ${styles.delete}`}><Trash2 size={16} /> מחק נושא</button>
-          </div>
+            <button onClick={handleOpenMoveTabModal} className={styles.contextMenuItem}><MoveRight size={16} /> העבר למרחב אחר</button>
+            <button onClick={handleDeleteTabClick} className={`${styles.contextMenuItem} ${styles.delete}`} style={{ borderTop: '1px solid var(--border-color)', marginTop: '5px' }}><Trash2 size={16} /> מחק נושא</button>
+          </div> 
         )}
 {isDeleteTabModalOpen && ( 
           <div className={styles.modalOverlay} onClick={() => setDeleteTabModalOpen(false)}>
@@ -688,8 +769,40 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
         )}
         {isDeleteSpaceModalOpen && ( <div className={styles.modalOverlay} onClick={() => setDeleteSpaceModalOpen(false)}><div className={styles.modalContent} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px', textAlign: 'center', border: '1px solid #ef4444' }}><button onClick={() => setDeleteSpaceModalOpen(false)} className={styles.closeModal}><X size={20}/></button><div style={{ display: 'flex', justifyContent: 'center', marginBottom: '15px' }}><Trash2 size={48} color="#ef4444" /></div><h2 style={{ marginBottom: '15px', color: 'var(--text-main)' }}>מחיקת מרחב</h2><p style={{ color: 'var(--text-secondary)', marginBottom: '25px', lineHeight: '1.6', fontSize: '0.95rem' }}>האם אתה בטוח שברצונך למחוק את המרחב <strong>"{spaceToDelete?.name}"</strong>?<br/><span style={{ color: '#ef4444', fontSize: '0.85rem' }}>פעולה זו תמחק את כל הנושאים, המסמכים והסרטונים שבו לצמיתות ולא ניתנת לביטול.</span></p><div style={{ display: 'flex', gap: '10px' }}><button onClick={() => setDeleteSpaceModalOpen(false)} className={styles.submitModalBtn} style={{ background: 'var(--bg-hover)', color: 'var(--text-main)', flex: 1 }}>ביטול</button><button onClick={executeDeleteSpace} className={styles.submitModalBtn} style={{ background: '#ef4444', color: 'white', flex: 1, border: 'none' }}>כן, מחק מרחב</button></div></div></div> )}
 
+
         {isMoveModalOpen && ( <div className={styles.modalOverlay} onClick={() => setMoveModalOpen(false)}><div className={styles.modalContent} onClick={(e) => e.stopPropagation()}><button onClick={() => setMoveModalOpen(false)} className={styles.closeModal}><X size={20}/></button><h2>העברת פריט: {itemToMove?.title}</h2><form onSubmit={handleMoveSubmit} className={styles.modalForm}><div style={{ marginBottom: '15px' }}><label style={{ display: 'block', color: 'var(--text-secondary)', marginBottom: '8px', fontSize: '0.9rem' }}>בחר מרחב יעד:</label><select value={moveDestination.spaceId} onChange={(e) => { const newSpaceId = e.target.value; const targetSpace = spaces.find(s => s._id === newSpaceId); setMoveDestination({ spaceId: newSpaceId, customTab: targetSpace?.customTabs?.[0] || '' }); }} style={{ width: '100%', padding: '10px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', borderRadius: '6px' }}>{spaces.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}</select></div>{itemToMove?.section !== 'links' && ( <div style={{ marginBottom: '20px' }}><label style={{ display: 'block', color: 'var(--text-secondary)', marginBottom: '8px', fontSize: '0.9rem' }}>בחר נושא יעד:</label><select value={moveDestination.customTab} onChange={(e) => setMoveDestination({ ...moveDestination, customTab: e.target.value })} style={{ width: '100%', padding: '10px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', borderRadius: '6px' }}>{spaces.find(s => s._id === moveDestination.spaceId)?.customTabs?.map(tab => ( <option key={tab} value={tab}>{tab}</option> ))}{(!spaces.find(s => s._id === moveDestination.spaceId)?.customTabs || spaces.find(s => s._id === moveDestination.spaceId)?.customTabs.length === 0) && ( <option value="" disabled>אין נושאים במרחב זה</option> )}</select></div>)}<button type="submit" className={styles.submitModalBtn} disabled={itemToMove?.section !== 'links' && !moveDestination.customTab}>העבר עכשיו</button></form></div></div> )}
         {isEditTabModalOpen && ( <div className={styles.modalOverlay} onClick={() => setEditTabModalOpen(false)}><div className={styles.modalContent} onClick={(e) => e.stopPropagation()}><button onClick={() => setEditTabModalOpen(false)} className={styles.closeModal}><X size={20}/></button><h2>שינוי שם נושא</h2><form onSubmit={handleSaveEditTab} className={styles.modalForm}><input type="text" value={editTabName} onChange={e => setEditTabName(e.target.value)} required autoFocus /><button type="submit" className={styles.submitModalBtn}>שמור שם חדש</button></form></div></div> )}
+        {isMoveTabModalOpen && ( 
+          <div className={styles.modalOverlay} onClick={() => setMoveTabModalOpen(false)}>
+            <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+              <button onClick={() => setMoveTabModalOpen(false)} className={styles.closeModal}><X size={20}/></button>
+              <h2>העברת נושא</h2>
+              <p style={{ color: 'var(--text-secondary)', marginBottom: '20px', fontSize: '0.95rem' }}>
+                מעביר את הנושא <strong>"{tabToMove}"</strong> יחד עם כל התוכן שבו.
+              </p>
+              <form onSubmit={executeMoveTab} className={styles.modalForm}>
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{ display: 'block', color: 'var(--text-secondary)', marginBottom: '8px', fontSize: '0.9rem' }}>בחר מרחב יעד:</label>
+                  <select 
+                    value={moveTabDestinationSpaceId} 
+                    onChange={(e) => setMoveTabDestinationSpaceId(e.target.value)} 
+                    style={{ width: '100%', padding: '10px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', borderRadius: '6px' }}
+                    required
+                  >
+                    <option value="" disabled>בחר מרחב...</option>
+                    {spaces.filter(s => s._id !== activeSpace._id).map(s => (
+                      <option key={s._id} value={s._id}>{s.name}</option>
+                    ))}
+                  </select>
+                </div>
+                {spaces.filter(s => s._id !== activeSpace._id).length === 0 && (
+                  <p style={{ color: '#ef4444', fontSize: '0.85rem' }}>אין מרחבים נוספים להעביר אליהם.</p>
+                )}
+                <button type="submit" className={styles.submitModalBtn} disabled={!moveTabDestinationSpaceId}>העבר נושא</button>
+              </form>
+            </div>
+          </div> 
+        )}
         {isSettingsModalOpen && ( <div className={styles.modalOverlay} onClick={() => setSettingsModalOpen(false)}><div className={styles.modalContent} style={{ maxWidth: '450px' }} onClick={(e) => e.stopPropagation()}><button onClick={() => setSettingsModalOpen(false)} className={styles.closeModal}><X size={20}/></button><h2 style={{ marginBottom: '20px' }}>הגדרות ועיצוב מרחב</h2><form onSubmit={handleSaveSpaceSettings} className={styles.modalForm}><div style={{ marginBottom: '15px' }}><label style={{ display: 'block', color: 'var(--text-secondary)', marginBottom: '8px', fontSize: '0.9rem' }}>שם המרחב:</label><input type="text" value={editSpaceData.name} onChange={e => setEditSpaceData({...editSpaceData, name: e.target.value})} required /></div><div style={{ marginBottom: '15px' }}><label style={{ display: 'block', color: 'var(--text-secondary)', marginBottom: '8px', fontSize: '0.9rem' }}>בחר אייקון:</label><div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', background: 'var(--bg-main)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>{Object.keys(ICONS_MAP).map(iconKey => { const IconCmp = ICONS_MAP[iconKey]; const isSelected = editSpaceData.iconName === iconKey; return ( <button key={iconKey} type="button" onClick={() => setEditSpaceData({...editSpaceData, iconName: iconKey})} style={{ background: isSelected ? 'var(--bg-hover)' : 'transparent', border: isSelected ? `1px solid ${editSpaceData.color}` : '1px solid transparent', padding: '8px', borderRadius: '6px', cursor: 'pointer', transition: 'all 0.2s' }}><IconCmp size={20} color={isSelected ? editSpaceData.color : 'var(--text-muted)'} /></button> )})}</div></div><div style={{ marginBottom: '25px' }}><label style={{ display: 'block', color: 'var(--text-secondary)', marginBottom: '8px', fontSize: '0.9rem' }}>צבע ייחודי:</label><div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>{AVAILABLE_COLORS.map(color => ( <button key={color} type="button" onClick={() => setEditSpaceData({...editSpaceData, color: color})} style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: color, border: editSpaceData.color === color ? '3px solid var(--text-main)' : '3px solid transparent', cursor: 'pointer', outline: editSpaceData.color === color ? `1px solid ${color}` : 'none' }} /> ))}</div></div><button type="submit" className={styles.submitModalBtn} style={{ width: '100%' }}>שמור שינויים</button></form></div></div> )}
         {isRenameSpaceModalOpen && ( <div className={styles.modalOverlay} onClick={() => setRenameSpaceModalOpen(false)}><div className={styles.modalContent} onClick={(e) => e.stopPropagation()}><button onClick={() => setRenameSpaceModalOpen(false)} className={styles.closeModal}><X size={20}/></button><h2>שינוי שם מרחב</h2><form onSubmit={handleRenameSpaceSubmit} className={styles.modalForm}><input type="text" value={newSpaceName} onChange={e => setNewSpaceName(e.target.value)} required autoFocus /><button type="submit" className={styles.submitModalBtn}>שמור שם חדש</button></form></div></div> )}
         {isEditModalOpen && ( <div className={styles.modalOverlay} onClick={() => setEditModalOpen(false)}><div className={styles.modalContent} onClick={(e) => e.stopPropagation()}><button onClick={() => setEditModalOpen(false)} className={styles.closeModal}><X size={20}/></button><h2>עריכת פריט</h2><form onSubmit={handleSaveEdit} className={styles.modalForm}><input type="text" placeholder="כותרת" value={editItemData.title} onChange={e => setEditItemData({...editItemData, title: e.target.value})} required autoFocus /><input type="url" placeholder="קישור (URL)" value={editItemData.link || editItemData.url || ''} onChange={e => setEditItemData({...editItemData, link: e.target.value})} required style={{ direction: 'ltr', textAlign: 'left' }} /><button type="submit" className={styles.submitModalBtn}>שמור שינויים</button></form></div></div> )}
