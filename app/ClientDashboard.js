@@ -42,7 +42,6 @@ const getDocIconProps = (url) => {
   return { Icon: FileText, color: "var(--brand-color)", bg: "var(--bg-hover)" }; 
 };
 
-// Vercel strict build fix: Moved default arrays outside the component
 const defaultGlobalFavorites = [
   { _id: 'g1', title: 'ג׳ימיני', link: 'https://gemini.google.com', section: 'links', isFavorite: true, isPinnedToMain: true, isGlobal: true },
   { _id: 'g2', title: 'Chat GPT', link: 'https://chatgpt.com', section: 'links', isFavorite: true, isPinnedToMain: true, isGlobal: true },
@@ -69,8 +68,6 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
   const router = useRouter();
   
   const [isMounted, setIsMounted] = useState(false);
-  const [isDataLoaded, setIsDataLoaded] = useState(false); 
-  
   const [themeMode, setThemeMode] = useState('dark'); 
   const [themeTint, setThemeTint] = useState('blue'); 
   const [showThemeMenu, setShowThemeMenu] = useState(false);
@@ -131,10 +128,6 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
   const currentSpaceId = activeSpace?._id || 'default';
   const currentSpaceTabs = activeSpace?.customTabs || [];
 
-  // ==========================================
-  // שיפור הזיכרון - שאיבה מרוכזת פעם אחת בלבד
-  // (התווספה השתקה לבדיקות של Vercel כדי למנוע קריסה)
-  // ==========================================
   useEffect(() => { 
     setIsMounted(true); 
     if (window.innerWidth <= 768) { setSidebarOpen(false); }
@@ -148,7 +141,12 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
     const savedTab = localStorage.getItem('dash_tab');
     const savedCategory = localStorage.getItem('dash_category');
     
-    let targetSpace = initialSpaces.find(s => s._id === savedSpaceId) || initialSpaces[0] || defaultSpace;
+    let targetSpace = spaces[0]; 
+    if (savedSpaceId) {
+        const found = spaces.find(s => s._id === savedSpaceId);
+        if (found) targetSpace = found;
+    }
+    
     setActiveSpace(targetSpace);
     
     const spaceTabs = targetSpace?.customTabs || [];
@@ -161,14 +159,8 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
     }
 
     if (savedCategory) setActiveCategoryTab(savedCategory);
-
-    setIsDataLoaded(true); 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => { if (isDataLoaded && activeSpace) localStorage.setItem('dash_spaceId', activeSpace._id); }, [activeSpace, isDataLoaded]);
-  useEffect(() => { if (isDataLoaded) localStorage.setItem('dash_tab', activeCustomTab === null ? 'null' : activeCustomTab); }, [activeCustomTab, isDataLoaded]);
-  useEffect(() => { if (isDataLoaded) localStorage.setItem('dash_category', activeCategoryTab); }, [activeCategoryTab, isDataLoaded]);
 
   const mouseSensor = useSensor(MouseSensor, { activationConstraint: { distance: 5 } });
   const touchSensor = useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } });
@@ -189,25 +181,89 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
     const { active, over } = event; if (!over || active.id === over.id) return;
     if (currentSpaceTabs.includes(active.id) && currentSpaceTabs.includes(over.id)) { const oldIndex = currentSpaceTabs.indexOf(active.id); const newIndex = currentSpaceTabs.indexOf(over.id); const updatedTabs = arrayMove(currentSpaceTabs, oldIndex, newIndex); const updatedSpace = { ...activeSpace, customTabs: updatedTabs }; setSpaces(spaces.map(s => s._id === activeSpace._id ? updatedSpace : s)); setActiveSpace(updatedSpace); if (activeSpace._id !== 'default') { try { await fetch(`/api/spaces/${activeSpace._id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customTabs: updatedTabs }) }); } catch (error) {} } return; }
     const activeItem = items.find(i => i._id === active.id); const overItem = items.find(i => i._id === over.id);
-    if (activeItem && currentSpaceTabs.includes(over.id)) { if (activeItem.section === 'links') return; const targetTab = over.id; if (activeItem.customTab !== targetTab) { setItems(items.map(i => i._id === activeItem._id ? { ...i, customTab: targetTab } : i)); setActiveCustomTab(targetTab); if (!activeItem.isGlobal) { try { await fetch(`/api/data/${activeItem._id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customTab: targetTab }) }); } catch (error) {} } } return; }
+    if (activeItem && currentSpaceTabs.includes(over.id)) { if (activeItem.section === 'links') return; const targetTab = over.id; if (activeItem.customTab !== targetTab) { setItems(items.map(i => i._id === activeItem._id ? { ...i, customTab: targetTab } : i)); setActiveCustomTab(targetTab); localStorage.setItem('dash_tab', targetTab); if (!activeItem.isGlobal) { try { await fetch(`/api/data/${activeItem._id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customTab: targetTab }) }); } catch (error) {} } } return; }
     if (activeItem && overItem) { let filteredArray = []; if (activeCategoryTab === 'ראשי' || activeCategoryTab === 'מועדפים') { if (favArray.find(i => i._id === active.id)) filteredArray = favArray; } if (filteredArray.length === 0 && (activeCategoryTab === 'ראשי' || activeCategoryTab === 'מסמכים')) { if (documentItems.find(i => i._id === active.id)) filteredArray = documentItems; } if (filteredArray.length === 0 && (activeCategoryTab === 'ראשי' || activeCategoryTab === 'סרטונים')) { if (visualItems.find(i => i._id === active.id)) filteredArray = visualItems; }
       if (filteredArray.length > 0) { const oldIndex = filteredArray.findIndex(i => i._id === active.id); const newIndex = filteredArray.findIndex(i => i._id === over.id); if(oldIndex !== -1 && newIndex !== -1) { const reordered = arrayMove(filteredArray, oldIndex, newIndex); const orderUpdates = reordered.map((item, index) => ({ _id: item._id, order: index })); setItems(prev => prev.map(item => { const update = orderUpdates.find(u => u._id === item._id); return update ? { ...item, order: update.order } : item; })); try { await fetch('/api/reorder', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(orderUpdates) }); } catch (error) {} } } }
   };
 
-  const handleAddCustomTab = async (e) => { e.preventDefault(); if (!newTabName || currentSpaceTabs.includes(newTabName)) return; const updatedTabs = [...currentSpaceTabs, newTabName]; const updatedSpace = { ...activeSpace, customTabs: updatedTabs }; setSpaces(spaces.map(s => s._id === activeSpace._id ? updatedSpace : s)); setActiveSpace(updatedSpace); setActiveCustomTab(newTabName); setAddTabModalOpen(false); setNewTabName(''); if (activeSpace._id !== 'default') { fetch(`/api/spaces/${activeSpace._id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customTabs: updatedTabs }) }); } };
+  const handleAddCustomTab = async (e) => { 
+    e.preventDefault(); if (!newTabName || currentSpaceTabs.includes(newTabName)) return; 
+    const updatedTabs = [...currentSpaceTabs, newTabName]; const updatedSpace = { ...activeSpace, customTabs: updatedTabs }; 
+    setSpaces(spaces.map(s => s._id === activeSpace._id ? updatedSpace : s)); 
+    setActiveSpace(updatedSpace); 
+    setActiveCustomTab(newTabName); 
+    localStorage.setItem('dash_tab', newTabName); 
+    setAddTabModalOpen(false); setNewTabName(''); 
+    if (activeSpace._id !== 'default') { fetch(`/api/spaces/${activeSpace._id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customTabs: updatedTabs }) }); } 
+  };
+  
   const openEditTab = () => { setOldTabName(tabContextMenu.tabName); setEditTabName(tabContextMenu.tabName); setEditTabModalOpen(true); closeContextMenus(); };
-  const handleSaveEditTab = async (e) => { e.preventDefault(); if (!editTabName || editTabName === oldTabName || currentSpaceTabs.includes(editTabName)) { setEditTabModalOpen(false); return; } const updatedTabs = currentSpaceTabs.map(t => t === oldTabName ? editTabName : t); const updatedSpace = { ...activeSpace, customTabs: updatedTabs }; setSpaces(spaces.map(s => s._id === activeSpace._id ? updatedSpace : s)); setActiveSpace(updatedSpace); const itemsToUpdate = items.filter(i => i.spaceId === activeSpace._id && i.customTab === oldTabName); setItems(items.map(i => (i.spaceId === activeSpace._id && i.customTab === oldTabName) ? { ...i, customTab: editTabName } : i)); if (activeCustomTab === oldTabName) setActiveCustomTab(editTabName); setEditTabModalOpen(false); if (activeSpace._id !== 'default') { fetch(`/api/spaces/${activeSpace._id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customTabs: updatedTabs }) }); Promise.all(itemsToUpdate.map(item => fetch(`/api/data/${item._id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customTab: editTabName }) }))); } };
+  
+  const handleSaveEditTab = async (e) => { 
+    e.preventDefault(); if (!editTabName || editTabName === oldTabName || currentSpaceTabs.includes(editTabName)) { setEditTabModalOpen(false); return; } 
+    const updatedTabs = currentSpaceTabs.map(t => t === oldTabName ? editTabName : t); const updatedSpace = { ...activeSpace, customTabs: updatedTabs }; 
+    setSpaces(spaces.map(s => s._id === activeSpace._id ? updatedSpace : s)); setActiveSpace(updatedSpace); 
+    const itemsToUpdate = items.filter(i => i.spaceId === activeSpace._id && i.customTab === oldTabName); 
+    setItems(items.map(i => (i.spaceId === activeSpace._id && i.customTab === oldTabName) ? { ...i, customTab: editTabName } : i)); 
+    if (activeCustomTab === oldTabName) {
+      setActiveCustomTab(editTabName); 
+      localStorage.setItem('dash_tab', editTabName); 
+    }
+    setEditTabModalOpen(false); 
+    if (activeSpace._id !== 'default') { fetch(`/api/spaces/${activeSpace._id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customTabs: updatedTabs }) }); Promise.all(itemsToUpdate.map(item => fetch(`/api/data/${item._id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customTab: editTabName }) }))); } 
+  };
+  
   const handleDeleteTabClick = () => { setTabToDelete(tabContextMenu.tabName); setDeleteTabModalOpen(true); closeContextMenus(); };
-  const executeDeleteTab = async () => { if (!tabToDelete) return; const updatedTabs = currentSpaceTabs.filter(t => t !== tabToDelete); const updatedSpace = { ...activeSpace, customTabs: updatedTabs }; setSpaces(spaces.map(s => s._id === activeSpace._id ? updatedSpace : s)); setActiveSpace(updatedSpace); const itemsToDelete = items.filter(i => i.spaceId === activeSpace._id && i.customTab === tabToDelete); setItems(items.filter(i => !(i.spaceId === activeSpace._id && i.customTab === tabToDelete))); setActiveCustomTab(updatedTabs.length > 0 ? updatedTabs[0] : null); setDeleteTabModalOpen(false); setTabToDelete(null); if (activeSpace._id !== 'default') { try { await fetch(`/api/spaces/${activeSpace._id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customTabs: updatedTabs }) }); await Promise.all(itemsToDelete.map(item => fetch(`/api/data/${item._id}`, { method: 'DELETE' }))); } catch (error) {} } };
+  
+  const executeDeleteTab = async () => { 
+    if (!tabToDelete) return; 
+    const updatedTabs = currentSpaceTabs.filter(t => t !== tabToDelete); const updatedSpace = { ...activeSpace, customTabs: updatedTabs }; 
+    setSpaces(spaces.map(s => s._id === activeSpace._id ? updatedSpace : s)); setActiveSpace(updatedSpace); 
+    const itemsToDelete = items.filter(i => i.spaceId === activeSpace._id && i.customTab === tabToDelete); 
+    setItems(items.filter(i => !(i.spaceId === activeSpace._id && i.customTab === tabToDelete))); 
+    const nextTab = updatedTabs.length > 0 ? updatedTabs[0] : null;
+    setActiveCustomTab(nextTab); 
+    localStorage.setItem('dash_tab', nextTab || 'null'); 
+    setDeleteTabModalOpen(false); setTabToDelete(null); 
+    if (activeSpace._id !== 'default') { try { await fetch(`/api/spaces/${activeSpace._id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customTabs: updatedTabs }) }); await Promise.all(itemsToDelete.map(item => fetch(`/api/data/${item._id}`, { method: 'DELETE' }))); } catch (error) {} } 
+  };
 
-  const handleAddSpace = async (e) => { e.preventDefault(); if (!newSpaceName) return; const tempId = Date.now().toString(); const newSpace = { _id: tempId, name: newSpaceName, iconName: 'Folder', color: 'var(--brand-color)', customTabs: [] }; setSpaces([...spaces, newSpace]); setActiveSpace(newSpace); setActiveCustomTab(null); setActiveCategoryTab('ראשי'); setAddSpaceModalOpen(false); setNewSpaceName(''); try { const res = await fetch('/api/spaces', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newSpace.name, iconName: newSpace.iconName, color: newSpace.color, customTabs: [] }) }); if (res.ok) { const savedSpace = await res.json(); setSpaces(prev => prev.map(s => s._id === tempId ? { ...s, _id: savedSpace._id } : s)); setActiveSpace(savedSpace); } } catch (error) {} };
+  const handleAddSpace = async (e) => { 
+    e.preventDefault(); if (!newSpaceName) return; 
+    const tempId = Date.now().toString(); const newSpace = { _id: tempId, name: newSpaceName, iconName: 'Folder', color: 'var(--brand-color)', customTabs: [] }; 
+    setSpaces([...spaces, newSpace]); 
+    setActiveSpace(newSpace); 
+    setActiveCustomTab(null); 
+    setActiveCategoryTab('ראשי'); 
+    localStorage.setItem('dash_spaceId', tempId); 
+    localStorage.setItem('dash_tab', 'null');
+    localStorage.setItem('dash_category', 'ראשי');
+    setAddSpaceModalOpen(false); setNewSpaceName(''); 
+    try { const res = await fetch('/api/spaces', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newSpace.name, iconName: newSpace.iconName, color: newSpace.color, customTabs: [] }) }); if (res.ok) { const savedSpace = await res.json(); setSpaces(prev => prev.map(s => s._id === tempId ? { ...s, _id: savedSpace._id } : s)); setActiveSpace(savedSpace); localStorage.setItem('dash_spaceId', savedSpace._id); } } catch (error) {} 
+  };
+  
   const handleSpaceContextMenu = (e, space) => { e.preventDefault(); e.stopPropagation(); const { x, y } = getContextMenuPosition(e); closeContextMenus(); setSpaceContextMenu({ visible: true, x, y, space }); };
   const openSpaceSettings = (space) => { setEditSpaceData({ name: space.name, iconName: space.iconName || 'Folder', color: space.color || 'var(--brand-color)' }); setEditingSpaceId(space._id); setSettingsModalOpen(true); closeContextMenus(); };
   const handleSaveSpaceSettings = async (e) => { e.preventDefault(); const updatedSpaces = spaces.map(s => s._id === editingSpaceId ? { ...s, name: editSpaceData.name, iconName: editSpaceData.iconName, color: editSpaceData.color } : s); setSpaces(updatedSpaces); if (activeSpace._id === editingSpaceId) setActiveSpace(updatedSpaces.find(s => s._id === editingSpaceId)); setSettingsModalOpen(false); if (editingSpaceId !== 'default') { fetch(`/api/spaces/${editingSpaceId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: editSpaceData.name, iconName: editSpaceData.iconName, color: editSpaceData.color }) }); } };
   const openRenameSpace = () => { if (!spaceContextMenu.space) return; setNewSpaceName(spaceContextMenu.space.name); setRenameSpaceModalOpen(true); closeContextMenus(); };
   const handleRenameSpaceSubmit = async (e) => { e.preventDefault(); const targetSpaceId = spaceContextMenu.space._id; const updatedSpaces = spaces.map(s => s._id === targetSpaceId ? { ...s, name: newSpaceName } : s); setSpaces(updatedSpaces); if (activeSpace._id === targetSpaceId) setActiveSpace(updatedSpaces.find(s => s._id === activeSpace._id)); setRenameSpaceModalOpen(false); if (targetSpaceId !== 'default') { fetch(`/api/spaces/${targetSpaceId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newSpaceName }) }); } };
   const handleDeleteSpaceClick = () => { if (!spaceContextMenu.space) return; setSpaceToDelete(spaceContextMenu.space); setDeleteSpaceModalOpen(true); closeContextMenus(); };
-  const executeDeleteSpace = async () => { if (!spaceToDelete) return; const targetSpaceId = spaceToDelete._id; const updatedSpaces = spaces.filter(s => s._id !== targetSpaceId); setSpaces(updatedSpaces); if (activeSpace._id === targetSpaceId) { const nextSpace = updatedSpaces[0] || null; setActiveSpace(nextSpace); setActiveCustomTab(nextSpace?.customTabs?.[0] || null); } setDeleteSpaceModalOpen(false); setSpaceToDelete(null); if (targetSpaceId !== 'default') { fetch(`/api/spaces/${targetSpaceId}`, { method: 'DELETE' }); } };
+  
+  const executeDeleteSpace = async () => { 
+    if (!spaceToDelete) return; 
+    const targetSpaceId = spaceToDelete._id; const updatedSpaces = spaces.filter(s => s._id !== targetSpaceId); 
+    setSpaces(updatedSpaces); 
+    if (activeSpace._id === targetSpaceId) { 
+        const nextSpace = updatedSpaces[0] || null; 
+        setActiveSpace(nextSpace); 
+        const nextTab = nextSpace?.customTabs?.[0] || null;
+        setActiveCustomTab(nextTab); 
+        localStorage.setItem('dash_spaceId', nextSpace ? nextSpace._id : 'default'); 
+        localStorage.setItem('dash_tab', nextTab || 'null');
+    } 
+    setDeleteSpaceModalOpen(false); setSpaceToDelete(null); 
+    if (targetSpaceId !== 'default') { fetch(`/api/spaces/${targetSpaceId}`, { method: 'DELETE' }); } 
+  };
 
   const handleAddItem = async (e) => { e.preventDefault(); if (!newItemData.title || !newItemData.link) return; const currentPinnedCount = items.filter(i => i.isFavorite && i.isPinnedToMain && (i.spaceId || 'default') === currentSpaceId).length; const shouldPin = newItemSection === 'favorites' && currentPinnedCount < 10; const tempId = Date.now().toString(); const newItem = { _id: tempId, title: newItemData.title, link: newItemData.link, section: newItemSection === 'favorites' ? 'links' : newItemSection, isFavorite: newItemSection === 'favorites', isPinnedToMain: shouldPin, spaceId: currentSpaceId, customTab: newItemSection === 'favorites' ? null : activeCustomTab, order: items.length }; setItems([...items, newItem]); setAddItemModalOpen(false); setNewItemData({ title: '', link: '' }); try { const { _id, ...itemToSave } = newItem; const res = await fetch('/api/data', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(itemToSave) }); if (res.ok) { const savedItem = await res.json(); setItems(prev => prev.map(i => i._id === tempId ? { ...i, _id: savedItem._id } : i)); } } catch (error) {} };
   const handleContextMenu = (e, item) => { e.preventDefault(); const { x, y } = getContextMenuPosition(e); closeContextMenus(); setContextMenu({ visible: true, x, y, item: item }); };
@@ -273,7 +329,7 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
              
              <div className={styles.spacesList}>
                {spaces.map(space => (
-                 <div key={space._id} className={`${styles.spaceItem} ${activeSpace?._id === space._id ? styles.activeSpace : ''}`} onClick={() => { setActiveSpace(space); setActiveCategoryTab('ראשי'); setActiveCustomTab(space.customTabs?.[0] || null); if (window.innerWidth <= 768) setSidebarOpen(false); }} onContextMenu={(e) => handleSpaceContextMenu(e, space)} style={{ justifyContent: isSidebarOpen ? 'flex-start' : 'center', padding: isSidebarOpen ? '10px' : '12px 0', width: isSidebarOpen ? 'calc(100% - 40px)' : '40px', margin: '0 auto 5px auto', borderRadius: '8px', display: 'flex', alignItems: 'center' }} title={!isSidebarOpen ? space.name : ""}>
+                 <div key={space._id} className={`${styles.spaceItem} ${activeSpace?._id === space._id ? styles.activeSpace : ''}`} onClick={() => { setActiveSpace(space); setActiveCategoryTab('ראשי'); const firstTab = space.customTabs?.[0] || null; setActiveCustomTab(firstTab); localStorage.setItem('dash_spaceId', space._id); localStorage.setItem('dash_category', 'ראשי'); localStorage.setItem('dash_tab', firstTab || 'null'); if (window.innerWidth <= 768) setSidebarOpen(false); }} onContextMenu={(e) => handleSpaceContextMenu(e, space)} style={{ justifyContent: isSidebarOpen ? 'flex-start' : 'center', padding: isSidebarOpen ? '10px' : '12px 0', width: isSidebarOpen ? 'calc(100% - 40px)' : '40px', margin: '0 auto 5px auto', borderRadius: '8px', display: 'flex', alignItems: 'center' }} title={!isSidebarOpen ? space.name : ""}>
                    <span className={styles.spaceIcon} style={{ margin: isSidebarOpen ? '0' : '0 auto', display: 'flex' }}>{renderSpaceIcon(space.iconName, space.color)}</span> 
                    {isSidebarOpen && <span className={styles.spaceName} style={{ marginRight: '10px', whiteSpace: 'nowrap' }}>{space.name}</span>}
                  </div>
@@ -335,7 +391,7 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
                 {showInfoTooltip && (
                   <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: '10px', padding: '15px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '8px', boxShadow: '0 10px 15px -3px var(--shadow-color)', color: 'var(--text-secondary)', fontSize: '0.85rem', width: 'max-content', zIndex: 100, textAlign: 'right' }}>
                     <strong style={{ display: 'block', color: 'var(--text-main)', marginBottom: '8px', fontSize: '1.05rem' }}>אלדר ויז'ואל</strong>
-                    <div style={{ marginBottom: '4px' }}>גרסת מערכת: 3.2.7</div>
+                    <div style={{ marginBottom: '4px' }}>גרסת מערכת: 3.2.8</div>
                     <div style={{ color: 'var(--text-muted)' }}>&copy; 2026 כל הזכויות שמורות.</div>
                   </div>
                 )}
@@ -356,7 +412,7 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
                   {currentSpaceTabs.map(tab => {
                     const isTargeted = isDraggingItem && activeOverId === tab;
                     return (
-                      <SortableItem key={tab} id={tab} onClick={() => setActiveCustomTab(tab)} onContextMenu={(e) => handleTabContextMenu(e, tab)} className={styles.customTab} 
+                      <SortableItem key={tab} id={tab} onClick={() => { setActiveCustomTab(tab); localStorage.setItem('dash_tab', tab); }} onContextMenu={(e) => handleTabContextMenu(e, tab)} className={styles.customTab} 
                         style={{ flexShrink: 0, scrollSnapAlign: 'center', ...(isTargeted ? { background: 'rgba(16, 185, 129, 0.15)', border: '2px dashed #10b981', transform: 'scale(1.05)', transition: 'all 0.2s', color: '#10b981' } : activeCustomTab === tab ? { background: 'var(--bg-hover)', border: `2px solid ${activeSpace?.color || 'var(--brand-color)'}`, color: 'var(--text-main)' } : { border: '2px solid transparent' }) }}>
                         <span>{tab}</span>
                       </SortableItem>
@@ -373,10 +429,10 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
           </div>
 
           <div className={styles.categoryTabsWrapper}>
-            <button onClick={() => setActiveCategoryTab('ראשי')} className={`${styles.categoryTab} ${activeCategoryTab === 'ראשי' ? styles.activeCategoryTab : ''}`}><LayoutGrid size={16} /> ראשי</button>
-            <button onClick={() => setActiveCategoryTab('מועדפים')} className={`${styles.categoryTab} ${activeCategoryTab === 'מועדפים' ? styles.activeCategoryTab : ''}`}><Star size={16} /> מועדפים ({favoriteItems.length})</button>
-            <button onClick={() => setActiveCategoryTab('מסמכים')} className={`${styles.categoryTab} ${activeCategoryTab === 'מסמכים' ? styles.activeCategoryTab : ''}`}><FileText size={16} /> מסמכים ({documentItems.length})</button>
-            <button onClick={() => setActiveCategoryTab('סרטונים')} className={`${styles.categoryTab} ${activeCategoryTab === 'סרטונים' ? styles.activeCategoryTab : ''}`}><Play size={16} /> סרטונים ({visualItems.length})</button>
+            <button onClick={() => { setActiveCategoryTab('ראשי'); localStorage.setItem('dash_category', 'ראשי'); }} className={`${styles.categoryTab} ${activeCategoryTab === 'ראשי' ? styles.activeCategoryTab : ''}`}><LayoutGrid size={16} /> ראשי</button>
+            <button onClick={() => { setActiveCategoryTab('מועדפים'); localStorage.setItem('dash_category', 'מועדפים'); }} className={`${styles.categoryTab} ${activeCategoryTab === 'מועדפים' ? styles.activeCategoryTab : ''}`}><Star size={16} /> מועדפים ({favoriteItems.length})</button>
+            <button onClick={() => { setActiveCategoryTab('מסמכים'); localStorage.setItem('dash_category', 'מסמכים'); }} className={`${styles.categoryTab} ${activeCategoryTab === 'מסמכים' ? styles.activeCategoryTab : ''}`}><FileText size={16} /> מסמכים ({documentItems.length})</button>
+            <button onClick={() => { setActiveCategoryTab('סרטונים'); localStorage.setItem('dash_category', 'סרטונים'); }} className={`${styles.categoryTab} ${activeCategoryTab === 'סרטונים' ? styles.activeCategoryTab : ''}`}><Play size={16} /> סרטונים ({visualItems.length})</button>
           </div>
 
           <div className={`${styles.scrollableContent} ${styles.animatedContent}`} key={`${activeSpace?._id}-${activeCustomTab}-${activeCategoryTab}-${searchQuery}`}>
