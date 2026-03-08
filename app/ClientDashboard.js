@@ -432,24 +432,26 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
           </nav>
           
           <div className={styles.sidebarFooter} style={{ padding: isSidebarOpen ? '20px 20px 40px 20px' : '20px 0 40px 0', borderTop: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-       <div onClick={() => setIsRecycleBinOpen(true)} 
-                 style={{ display: 'flex', alignItems: 'center', justifyContent: isSidebarOpen ? 'flex-start' : 'center', width: isSidebarOpen ? 'calc(100% - 20px)' : '100%', margin: '0 auto', cursor: 'pointer', color: deletedItems.length > 0 ? 'var(--text-main)' : 'var(--text-muted)', transition: 'color 0.2s' }} 
+      <div onClick={() => setIsRecycleBinOpen(true)} 
+                 style={{ 
+                   display: 'flex', 
+                   alignItems: 'center', 
+                   justifyContent: isSidebarOpen ? 'flex-start' : 'center', 
+                   width: isSidebarOpen ? 'calc(100% - 20px)' : '100%', 
+                   margin: '0 auto', 
+                   cursor: 'pointer', 
+                   // כאן קורית ההדגשה העדינה: צבע חי יותר כשיש פריטים, ואפור כשהסל ריק
+                   color: deletedItems.length > 0 ? 'var(--text-main)' : 'var(--text-muted)', 
+                   transition: 'color 0.2s' 
+                 }} 
                  title={!isSidebarOpen ? "סל מחזור" : ""} 
                  onMouseEnter={(e) => e.currentTarget.style.color = 'var(--brand-color)'} 
                  onMouseLeave={(e) => e.currentTarget.style.color = deletedItems.length > 0 ? 'var(--text-main)' : 'var(--text-muted)'}>
               
-              {/* עטיפה לאייקון כדי למקם את הנקודה עליו */}
-              <div style={{ position: 'relative', display: 'flex' }}>
-                <Trash2 size={18} />
-                {/* חיווי הנקודה האדומה - מופיע רק אם הסל אינו ריק */}
-                {deletedItems.length > 0 && (
-                  <span style={{ position: 'absolute', top: '-4px', right: '-4px', width: '8px', height: '8px', background: '#ef4444', borderRadius: '50%', border: '2px solid var(--bg-sidebar)' }}></span>
-                )}
-              </div>
-              
+              <Trash2 size={18} />
               {isSidebarOpen && <span style={{ marginRight: '10px', whiteSpace: 'nowrap' }}>סל מחזור</span>}
             </div>
-            
+
             <div onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', justifyContent: isSidebarOpen ? 'flex-start' : 'center', width: isSidebarOpen ? 'calc(100% - 20px)' : '100%', margin: '0 auto', cursor: 'pointer', color: 'var(--text-muted)', transition: 'color 0.2s' }} title={!isSidebarOpen ? `התנתקות (${user.name})` : ""} onMouseEnter={(e) => e.currentTarget.style.color = '#ef4444'} onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}>
               <LogOut size={18} /> {isSidebarOpen && <span style={{ marginRight: '10px', whiteSpace: 'nowrap' }}>התנתקות ({user.name})</span>}
             </div>
