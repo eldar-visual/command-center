@@ -265,8 +265,23 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
     setAddSpaceModalOpen(false); setNewSpaceName(''); 
     try { const res = await fetch('/api/spaces', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newSpace.name, iconName: newSpace.iconName, color: newSpace.color, customTabs: [] }) }); if (res.ok) { const savedSpace = await res.json(); setSpaces(prev => prev.map(s => s._id === tempId ? { ...s, _id: savedSpace._id } : s)); setActiveSpace(savedSpace); localStorage.setItem('dash_spaceId', savedSpace._id); } } catch (error) {} 
   };
+
+
   
-  const handleSpaceContextMenu = (e, space) => { e.preventDefault(); e.stopPropagation(); const { x, y } = getContextMenuPosition(e); closeContextMenus(); setSpaceContextMenu({ visible: true, x, y, space }); };
+  const handleSpaceContextMenu = (e, space) => { 
+    e.preventDefault(); 
+    e.stopPropagation(); 
+    const { x, y } = getContextMenuPosition(e); 
+    closeContextMenus(); 
+    setSpaceContextMenu({ visible: true, x, y, space }); 
+  };
+  const handleTabContextMenu = (e, tab) => { 
+    e.preventDefault(); 
+    e.stopPropagation(); 
+    const { x, y } = getContextMenuPosition(e); 
+    closeContextMenus(); 
+    setTabContextMenu({ visible: true, x, y, tabName: tab }); 
+  };
   const openSpaceSettings = (space) => { setEditSpaceData({ name: space.name, iconName: space.iconName || 'Folder', color: space.color || 'var(--brand-color)' }); setEditingSpaceId(space._id); setSettingsModalOpen(true); closeContextMenus(); };
   const handleSaveSpaceSettings = async (e) => { e.preventDefault(); const updatedSpaces = spaces.map(s => s._id === editingSpaceId ? { ...s, name: editSpaceData.name, iconName: editSpaceData.iconName, color: editSpaceData.color } : s); setSpaces(updatedSpaces); if (activeSpace._id === editingSpaceId) setActiveSpace(updatedSpaces.find(s => s._id === editingSpaceId)); setSettingsModalOpen(false); if (editingSpaceId !== 'default') { fetch(`/api/spaces/${editingSpaceId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: editSpaceData.name, iconName: editSpaceData.iconName, color: editSpaceData.color }) }); } };
   const openRenameSpace = () => { if (!spaceContextMenu.space) return; setNewSpaceName(spaceContextMenu.space.name); setRenameSpaceModalOpen(true); closeContextMenus(); };
