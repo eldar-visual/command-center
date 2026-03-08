@@ -338,36 +338,34 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
   const handleContextMenu = (e, item) => { e.preventDefault(); const { x, y } = getContextMenuPosition(e); closeContextMenus(); setContextMenu({ visible: true, x, y, item: item }); };
   const handleSetItemColor = async (color) => { if (!contextMenu.item) return; const itemId = contextMenu.item._id; const updatedItems = items.map(i => i._id === itemId ? { ...i, itemColor: color } : i); setItems(updatedItems); closeContextMenus(); if (!contextMenu.item.isGlobal) { try { await fetch(`/api/data/${itemId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ itemColor: color }) }); } catch (error) {} } };
   
-  const handleDeleteItem = async () => { if (contextMenu.item) { const itemId = contextMenu.item._id; setItems(items.map(i => i._id === itemId ? { ...i, isDeleted: true } : i)); closeContextMenus(); setToastMessage('הפריט הועבר לסל המחזור'); setTimeout(() => setToastMessage(null), 3000); if (!contextMenu.item.isGlobal) { fetch(`/api/data/${itemId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ isDeleted: true }) }); } } };
-const handleRestoreItem = async (itemId) => { 
-    setItems(items.map(i => i._id === itemId ? { ...i, isDeleted: false } : i)); 
-    // הורדנו את סגירת החלונית כדי לאפשר עבודה רציפה
-    setToastMessage('הקובץ שוחזר בהצלחה!');
-    setTimeout(() => setToastMessage(null), 3000);
-    
-    try { 
-      await fetch(`/api/data/${itemId}`, { 
-        method: 'PUT', 
-        headers: { 'Content-Type': 'application/json' }, 
-        body: JSON.stringify({ isDeleted: false }) 
-      }); 
-    } catch (error) {
-      console.error("Failed to restore item:", error);
+ const handleDeleteItem = async () => { 
+    if (contextMenu.item) { 
+      const itemId = contextMenu.item._id; 
+      setItems(items.map(i => i._id === itemId ? { ...i, isDeleted: true } : i)); 
+      closeContextMenus(); 
+      // חיווי אדום למחיקה
+      setToastMessage({ text: 'הפריט הועבר לסל המחזור', type: 'delete' }); 
+      setTimeout(() => setToastMessage(null), 3000); 
+      if (!contextMenu.item.isGlobal) { fetch(`/api/data/${itemId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ isDeleted: true }) }); } 
     } 
+  };
+
+  const handleRestoreItem = async (itemId) => { 
+    setItems(items.map(i => i._id === itemId ? { ...i, isDeleted: false } : i)); 
+    // חיווי ירוק לשחזור!
+    setToastMessage({ text: 'הקובץ שוחזר בהצלחה!', type: 'success' });
+    setTimeout(() => setToastMessage(null), 3000);
+    try { await fetch(`/api/data/${itemId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ isDeleted: false }) }); } catch (error) {} 
   };
 
   const handlePermanentDelete = async (itemId) => { 
     setItems(items.filter(i => i._id !== itemId)); 
-    // הורדנו את סגירת החלונית 
-    setToastMessage('הקובץ נמחק לצמיתות');
+    // חיווי אדום למחיקה סופית
+    setToastMessage({ text: 'הקובץ נמחק לצמיתות', type: 'delete' });
     setTimeout(() => setToastMessage(null), 3000);
-    
-    try { 
-      await fetch(`/api/data/${itemId}`, { method: 'DELETE' }); 
-    } catch (error) {
-      console.error("Failed to permanently delete item:", error);
-    } 
+    try { await fetch(`/api/data/${itemId}`, { method: 'DELETE' }); } catch (error) {} 
   };
+
   const handleOpenEdit = () => { if (contextMenu.item) { setEditItemData(contextMenu.item); setEditModalOpen(true); closeContextMenus(); } };
   const handleSaveEdit = async (e) => { e.preventDefault(); setItems(items.map(i => i._id === editItemData._id ? editItemData : i)); setEditModalOpen(false); if (!editItemData.isGlobal) fetch(`/api/data/${editItemData._id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: editItemData.title, link: editItemData.link }) }); };
   const togglePinToMain = async (e, itemId) => { e.preventDefault(); e.stopPropagation(); const currentPinnedCount = items.filter(i => i.isFavorite && i.isPinnedToMain && (i.spaceId || 'default') === currentSpaceId).length; let newPinState = false; let shouldUpdate = false; const updatedItems = items.map(item => { if (item._id === itemId) { if (!item.isPinnedToMain && currentPinnedCount >= 10) { setMaxPinsModalOpen(true); return item; } newPinState = !item.isPinnedToMain; shouldUpdate = true; return { ...item, isPinnedToMain: newPinState }; } return item; }); setItems(updatedItems); if (shouldUpdate && !items.find(i=>i._id===itemId)?.isGlobal) { fetch(`/api/data/${itemId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ isPinnedToMain: newPinState }) }); } };
@@ -434,50 +432,24 @@ const handleRestoreItem = async (itemId) => {
           </nav>
           
           <div className={styles.sidebarFooter} style={{ padding: isSidebarOpen ? '20px 20px 40px 20px' : '20px 0 40px 0', borderTop: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-         <div 
-              onClick={() => setIsRecycleBinOpen(true)} 
-              style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: isSidebarOpen ? 'flex-start' : 'center', 
-                width: isSidebarOpen ? 'calc(100% - 20px)' : '100%', 
-                margin: '0 auto', 
-                cursor: 'pointer', 
-                padding: '8px 10px',
-                borderRadius: '8px',
-                position: 'relative',
-                // אם יש פריטים: צבע בולט ורקע עדין. אם אין: אפור רגיל
-                color: deletedItems.length > 0 ? 'var(--brand-color)' : 'var(--text-muted)', 
-                background: deletedItems.length > 0 ? 'var(--card-float-bg)' : 'transparent',
-                transition: 'all 0.2s' 
-              }} 
-              title={!isSidebarOpen ? `סל מחזור ${deletedItems.length > 0 ? `(${deletedItems.length})` : ""}` : ""} 
-              onMouseEnter={(e) => {
-                e.currentTarget.style.color = 'var(--brand-color)';
-                e.currentTarget.style.background = 'var(--bg-hover)';
-              }} 
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = deletedItems.length > 0 ? 'var(--brand-color)' : 'var(--text-muted)';
-                e.currentTarget.style.background = deletedItems.length > 0 ? 'var(--card-float-bg)' : 'transparent';
-              }}
-            >
-              <Trash2 size={18} /> 
-              {isSidebarOpen && (
-                <span style={{ marginRight: '10px', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', flex: 1, justifyContent: 'space-between' }}>
-                  סל מחזור
-                  {/* בועה קטנה עם מספר הפריטים (רק אם יש משהו בסל) */}
-                  {deletedItems.length > 0 && (
-                    <span style={{ background: 'var(--brand-color)', color: '#fff', fontSize: '0.75rem', padding: '2px 8px', borderRadius: '12px', fontWeight: 'bold' }}>
-                      {deletedItems.length}
-                    </span>
-                  )}
-                </span>
-              )}
-              {/* נקודת חיווי קטנה כשהתפריט סגור (במובייל/מצומצם) ויש פריטים */}
-              {!isSidebarOpen && deletedItems.length > 0 && (
-                <span style={{ position: 'absolute', top: '4px', right: '4px', width: '8px', height: '8px', background: 'var(--brand-color)', borderRadius: '50%' }}></span>
-              )}
+       <div onClick={() => setIsRecycleBinOpen(true)} 
+                 style={{ display: 'flex', alignItems: 'center', justifyContent: isSidebarOpen ? 'flex-start' : 'center', width: isSidebarOpen ? 'calc(100% - 20px)' : '100%', margin: '0 auto', cursor: 'pointer', color: deletedItems.length > 0 ? 'var(--text-main)' : 'var(--text-muted)', transition: 'color 0.2s' }} 
+                 title={!isSidebarOpen ? "סל מחזור" : ""} 
+                 onMouseEnter={(e) => e.currentTarget.style.color = 'var(--brand-color)'} 
+                 onMouseLeave={(e) => e.currentTarget.style.color = deletedItems.length > 0 ? 'var(--text-main)' : 'var(--text-muted)'}>
+              
+              {/* עטיפה לאייקון כדי למקם את הנקודה עליו */}
+              <div style={{ position: 'relative', display: 'flex' }}>
+                <Trash2 size={18} />
+                {/* חיווי הנקודה האדומה - מופיע רק אם הסל אינו ריק */}
+                {deletedItems.length > 0 && (
+                  <span style={{ position: 'absolute', top: '-4px', right: '-4px', width: '8px', height: '8px', background: '#ef4444', borderRadius: '50%', border: '2px solid var(--bg-sidebar)' }}></span>
+                )}
+              </div>
+              
+              {isSidebarOpen && <span style={{ marginRight: '10px', whiteSpace: 'nowrap' }}>סל מחזור</span>}
             </div>
+            
             <div onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', justifyContent: isSidebarOpen ? 'flex-start' : 'center', width: isSidebarOpen ? 'calc(100% - 20px)' : '100%', margin: '0 auto', cursor: 'pointer', color: 'var(--text-muted)', transition: 'color 0.2s' }} title={!isSidebarOpen ? `התנתקות (${user.name})` : ""} onMouseEnter={(e) => e.currentTarget.style.color = '#ef4444'} onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}>
               <LogOut size={18} /> {isSidebarOpen && <span style={{ marginRight: '10px', whiteSpace: 'nowrap' }}>התנתקות ({user.name})</span>}
             </div>
@@ -750,10 +722,20 @@ const handleRestoreItem = async (itemId) => {
           </div>
         )}
 
-        {toastMessage && (
-          <div style={{ position: 'fixed', bottom: '40px', left: '50%', transform: 'translateX(-50%)', background: 'var(--bg-main)', border: '1px solid rgba(239, 68, 68, 0.3)', color: 'var(--text-main)', padding: '12px 24px', borderRadius: '30px', display: 'flex', alignItems: 'center', gap: '10px', boxShadow: '0 10px 25px -5px var(--shadow-color)', zIndex: 9999, animation: 'floatUpWow 0.3s ease-out forwards' }}>
-            <Trash2 size={18} color="#ef4444" />
-            <span>{toastMessage}</span>
+      {toastMessage && (
+          <div style={{ position: 'fixed', bottom: '40px', left: '50%', transform: 'translateX(-50%)', background: 'var(--bg-main)', 
+            border: `1px solid ${toastMessage.type === 'success' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`, 
+            color: 'var(--text-main)', padding: '12px 24px', borderRadius: '30px', display: 'flex', alignItems: 'center', gap: '10px', 
+            boxShadow: '0 10px 25px -5px var(--shadow-color)', zIndex: 9999, animation: 'floatUpWow 0.3s ease-out forwards' }}>
+            
+            {/* אם זה הצלחה מציג ריפרש ירוק, אם מחיקה מציג פח אדום */}
+            {toastMessage.type === 'success' ? (
+              <RotateCcw size={18} color="#10b981" />
+            ) : (
+              <Trash2 size={18} color="#ef4444" />
+            )}
+            
+            <span>{toastMessage.text}</span>
           </div>
         )}
 
