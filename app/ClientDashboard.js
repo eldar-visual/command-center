@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { 
   Plus, Search, Settings, Menu, LogOut, Folder,
   Star, FileText, Play, ExternalLink, ChevronLeft, LayoutGrid, X,
-  Edit, Trash2, Pin, MoveRight,Info, RotateCcw,
+  Edit, Trash2, Pin, MoveRight, Info, RotateCcw,
   Home, Briefcase, Camera, Code, Book, Music, Video, Image as ImageIcon, 
   Mic, Heart, Cloud, Shield, Zap, Target, Umbrella, Coffee, Globe, Key, MapPin,
   FileSpreadsheet, Presentation, File,
@@ -23,16 +23,12 @@ const AVAILABLE_COLORS = ['#ffffff', '#94a3b8', '#ef4444', '#f97316', '#f59e0b',
 const THEMES = {
   'dark-gray': { '--bg-main': '#0f111a', '--bg-sidebar': '#1e293b', '--bg-card': '#1e293b', '--bg-hover': 'rgba(255, 255, 255, 0.05)', '--border-color': '#334155', '--text-main': '#f8fafc', '--text-secondary': '#cbd5e1', '--text-muted': '#64748b', '--brand-color': '#38bdf8', '--card-float-bg': 'rgba(255, 255, 255, 0.02)', '--card-float-border': 'rgba(255, 255, 255, 0.05)', '--shadow-color': 'rgba(0,0,0,0.5)', '--modal-overlay': 'rgba(15, 17, 26, 0.8)', '--placeholder-bg': '#334155', '--play-overlay': 'rgba(0,0,0,0.4)' },
   'light-gray': { '--bg-main': '#f8fafc', '--bg-sidebar': '#ffffff', '--bg-card': '#ffffff', '--bg-hover': 'rgba(0, 0, 0, 0.04)', '--border-color': '#e2e8f0', '--text-main': '#0f172a', '--text-secondary': '#334155', '--text-muted': '#64748b', '--brand-color': '#0ea5e9', '--card-float-bg': '#ffffff', '--card-float-border': '#e2e8f0', '--shadow-color': 'rgba(0,0,0,0.06)', '--modal-overlay': 'rgba(255, 255, 255, 0.8)', '--placeholder-bg': '#e2e8f0', '--play-overlay': 'rgba(255,255,255,0.4)' },
-  
   'dark-blue': { '--bg-main': '#020617', '--bg-sidebar': '#0f172a', '--bg-card': '#0f172a', '--bg-hover': 'rgba(56, 189, 248, 0.1)', '--border-color': '#1e293b', '--text-main': '#f0f9ff', '--text-secondary': '#bae6fd', '--text-muted': '#38bdf8', '--brand-color': '#38bdf8', '--card-float-bg': 'rgba(56, 189, 248, 0.02)', '--card-float-border': 'rgba(56, 189, 248, 0.1)', '--shadow-color': 'rgba(0,0,0,0.6)', '--modal-overlay': 'rgba(2, 6, 23, 0.8)', '--placeholder-bg': '#1e293b', '--play-overlay': 'rgba(0,0,0,0.5)' },
   'light-blue': { '--bg-main': '#f0f9ff', '--bg-sidebar': '#e0f2fe', '--bg-card': '#ffffff', '--bg-hover': 'rgba(2, 132, 199, 0.06)', '--border-color': '#bae6fd', '--text-main': '#0c4a6e', '--text-secondary': '#0369a1', '--text-muted': '#0284c7', '--brand-color': '#0284c7', '--card-float-bg': '#ffffff', '--card-float-border': '#bae6fd', '--shadow-color': 'rgba(2, 132, 199, 0.08)', '--modal-overlay': 'rgba(240, 249, 255, 0.8)', '--placeholder-bg': '#e0f2fe', '--play-overlay': 'rgba(255,255,255,0.5)' },
-  
   'dark-purple': { '--bg-main': '#150b24', '--bg-sidebar': '#1f1238', '--bg-card': '#1f1238', '--bg-hover': 'rgba(168, 85, 247, 0.15)', '--border-color': '#331e54', '--text-main': '#faf5ff', '--text-secondary': '#e9d5ff', '--text-muted': '#c084fc', '--brand-color': '#c084fc', '--card-float-bg': 'rgba(168, 85, 247, 0.03)', '--card-float-border': 'rgba(168, 85, 247, 0.15)', '--shadow-color': 'rgba(0,0,0,0.6)', '--modal-overlay': 'rgba(21, 11, 36, 0.8)', '--placeholder-bg': '#331e54', '--play-overlay': 'rgba(0,0,0,0.5)' },
   'light-purple': { '--bg-main': '#faf5ff', '--bg-sidebar': '#f3e8ff', '--bg-card': '#ffffff', '--bg-hover': 'rgba(147, 51, 234, 0.06)', '--border-color': '#e9d5ff', '--text-main': '#3b0764', '--text-secondary': '#581c87', '--text-muted': '#7e22ce', '--brand-color': '#9333ea', '--card-float-bg': '#ffffff', '--card-float-border': '#e9d5ff', '--shadow-color': 'rgba(147, 51, 234, 0.08)', '--modal-overlay': 'rgba(250, 245, 255, 0.8)', '--placeholder-bg': '#f3e8ff', '--play-overlay': 'rgba(255,255,255,0.5)' },
-
   'dark-green': { '--bg-main': '#021a10', '--bg-sidebar': '#063622', '--bg-card': '#063622', '--bg-hover': 'rgba(16, 185, 129, 0.15)', '--border-color': '#0b5e3f', '--text-main': '#ecfdf5', '--text-secondary': '#a7f3d0', '--text-muted': '#34d399', '--brand-color': '#10b981', '--card-float-bg': 'rgba(16, 185, 129, 0.02)', '--card-float-border': 'rgba(16, 185, 129, 0.15)', '--shadow-color': 'rgba(0,0,0,0.6)', '--modal-overlay': 'rgba(2, 26, 16, 0.8)', '--placeholder-bg': '#0b5e3f', '--play-overlay': 'rgba(0,0,0,0.5)' },
   'light-green': { '--bg-main': '#ecfdf5', '--bg-sidebar': '#d1fae5', '--bg-card': '#ffffff', '--bg-hover': 'rgba(5, 150, 105, 0.06)', '--border-color': '#a7f3d0', '--text-main': '#022c22', '--text-secondary': '#064e3b', '--text-muted': '#059669', '--brand-color': '#059669', '--card-float-bg': '#ffffff', '--card-float-border': '#a7f3d0', '--shadow-color': 'rgba(5, 150, 105, 0.08)', '--modal-overlay': 'rgba(236, 253, 245, 0.8)', '--placeholder-bg': '#d1fae5', '--play-overlay': 'rgba(255,255,255,0.5)' },
-
   'dark-red': { '--bg-main': '#1f0909', '--bg-sidebar': '#381010', '--bg-card': '#381010', '--bg-hover': 'rgba(239, 68, 68, 0.15)', '--border-color': '#5c1b1b', '--text-main': '#fef2f2', '--text-secondary': '#fecaca', '--text-muted': '#f87171', '--brand-color': '#ef4444', '--card-float-bg': 'rgba(239, 68, 68, 0.02)', '--card-float-border': 'rgba(239, 68, 68, 0.15)', '--shadow-color': 'rgba(0,0,0,0.6)', '--modal-overlay': 'rgba(31, 9, 9, 0.8)', '--placeholder-bg': '#5c1b1b', '--play-overlay': 'rgba(0,0,0,0.5)' },
   'light-red': { '--bg-main': '#fef2f2', '--bg-sidebar': '#fee2e2', '--bg-card': '#ffffff', '--bg-hover': 'rgba(220, 38, 38, 0.06)', '--border-color': '#fca5a5', '--text-main': '#450a0a', '--text-secondary': '#7f1d1d', '--text-muted': '#dc2626', '--brand-color': '#dc2626', '--card-float-bg': '#ffffff', '--card-float-border': '#fca5a5', '--shadow-color': 'rgba(220, 38, 38, 0.08)', '--modal-overlay': 'rgba(254, 242, 242, 0.8)', '--placeholder-bg': '#fee2e2', '--play-overlay': 'rgba(255,255,255,0.5)' }
 };
@@ -45,6 +41,20 @@ const getDocIconProps = (url) => {
   if (lowerUrl.includes('.pdf')) { return { Icon: File, color: "#ef4444", bg: "rgba(239, 68, 68, 0.1)" }; }
   return { Icon: FileText, color: "var(--brand-color)", bg: "var(--bg-hover)" }; 
 };
+
+// Vercel strict build fix: Moved default arrays outside the component
+const defaultGlobalFavorites = [
+  { _id: 'g1', title: 'ג׳ימיני', link: 'https://gemini.google.com', section: 'links', isFavorite: true, isPinnedToMain: true, isGlobal: true },
+  { _id: 'g2', title: 'Chat GPT', link: 'https://chatgpt.com', section: 'links', isFavorite: true, isPinnedToMain: true, isGlobal: true },
+  { _id: 'g3', title: 'Claude', link: 'https://claude.ai', section: 'links', isFavorite: true, isPinnedToMain: true, isGlobal: true },
+  { _id: 'g4', title: 'YouTube', link: 'https://youtube.com', section: 'links', isFavorite: true, isPinnedToMain: true, isGlobal: true },
+  { _id: 'g5', title: 'Google', link: 'https://google.com', section: 'links', isFavorite: true, isPinnedToMain: true, isGlobal: true },
+  { _id: 'g6', title: 'Google Drive', link: 'https://drive.google.com', section: 'links', isFavorite: true, isPinnedToMain: true, isGlobal: true },
+  { _id: 'g7', title: 'Gmail', link: 'https://mail.google.com', section: 'links', isFavorite: true, isPinnedToMain: true, isGlobal: true },
+  { _id: 'g8', title: 'Facebook', link: 'https://facebook.com', section: 'links', isFavorite: true, isPinnedToMain: true, isGlobal: true }
+];
+
+const defaultSpace = { _id: 'default', name: 'אישי', iconName: 'Home', color: 'var(--brand-color)', customTabs: ['יצירה'] };
 
 function SortableItem({ id, children, className, style, onContextMenu, href, onClick }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
@@ -59,7 +69,7 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
   const router = useRouter();
   
   const [isMounted, setIsMounted] = useState(false);
-  const [isDataLoaded, setIsDataLoaded] = useState(false); // רמזור למניעת דריסת זיכרון
+  const [isDataLoaded, setIsDataLoaded] = useState(false); 
   
   const [themeMode, setThemeMode] = useState('dark'); 
   const [themeTint, setThemeTint] = useState('blue'); 
@@ -70,20 +80,7 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
   const activeThemeKey = `${themeMode}-${themeTint}`;
   const activeThemeStyles = THEMES[activeThemeKey] || THEMES['dark-blue'];
   
-  const defaultGlobalFavorites = [
-    { _id: 'g1', title: 'ג׳ימיני', link: 'https://gemini.google.com', section: 'links', isFavorite: true, isPinnedToMain: true, isGlobal: true },
-    { _id: 'g2', title: 'Chat GPT', link: 'https://chatgpt.com', section: 'links', isFavorite: true, isPinnedToMain: true, isGlobal: true },
-    { _id: 'g3', title: 'Claude', link: 'https://claude.ai', section: 'links', isFavorite: true, isPinnedToMain: true, isGlobal: true },
-    { _id: 'g4', title: 'YouTube', link: 'https://youtube.com', section: 'links', isFavorite: true, isPinnedToMain: true, isGlobal: true },
-    { _id: 'g5', title: 'Google', link: 'https://google.com', section: 'links', isFavorite: true, isPinnedToMain: true, isGlobal: true },
-    { _id: 'g6', title: 'Google Drive', link: 'https://drive.google.com', section: 'links', isFavorite: true, isPinnedToMain: true, isGlobal: true },
-    { _id: 'g7', title: 'Gmail', link: 'https://mail.google.com', section: 'links', isFavorite: true, isPinnedToMain: true, isGlobal: true },
-    { _id: 'g8', title: 'Facebook', link: 'https://facebook.com', section: 'links', isFavorite: true, isPinnedToMain: true, isGlobal: true }
-  ];
-
   const fullItems = initialItems.length > 0 ? initialItems : defaultGlobalFavorites;
-  const defaultSpace = { _id: 'default', name: 'אישי', iconName: 'Home', color: 'var(--brand-color)', customTabs: ['יצירה'] };
-  
   const [spaces, setSpaces] = useState(initialSpaces.length > 0 ? initialSpaces : [defaultSpace]);
   const [activeSpace, setActiveSpace] = useState(spaces[0]);
   const [items, setItems] = useState(fullItems);
@@ -135,19 +132,18 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
   const currentSpaceTabs = activeSpace?.customTabs || [];
 
   // ==========================================
-  // שיפור הזיכרון - שאיבה מרוכזת פעם אחת בלבד!
+  // שיפור הזיכרון - שאיבה מרוכזת פעם אחת בלבד
+  // (התווספה השתקה לבדיקות של Vercel כדי למנוע קריסה)
   // ==========================================
   useEffect(() => { 
     setIsMounted(true); 
     if (window.innerWidth <= 768) { setSidebarOpen(false); }
     
-    // שאיבת הגדרות עיצוב
     const savedMode = localStorage.getItem('dash_theme_mode');
     const savedTint = localStorage.getItem('dash_theme_tint');
     if (savedMode) setThemeMode(savedMode);
     if (savedTint) setThemeTint(savedTint);
 
-    // שאיבת מיקום אחרון (מרחב, נושא, ולשונית)
     const savedSpaceId = localStorage.getItem('dash_spaceId');
     const savedTab = localStorage.getItem('dash_tab');
     const savedCategory = localStorage.getItem('dash_category');
@@ -166,13 +162,10 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
 
     if (savedCategory) setActiveCategoryTab(savedCategory);
 
-    // הרמזור נדלק - עכשיו מותר למערכת להתחיל לשמור שינויים חדשים
     setIsDataLoaded(true); 
-  }, [initialSpaces]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  // ==========================================
-  // שמירת המיקום בזיכרון (מוגנת על ידי הרמזור)
-  // ==========================================
   useEffect(() => { if (isDataLoaded && activeSpace) localStorage.setItem('dash_spaceId', activeSpace._id); }, [activeSpace, isDataLoaded]);
   useEffect(() => { if (isDataLoaded) localStorage.setItem('dash_tab', activeCustomTab === null ? 'null' : activeCustomTab); }, [activeCustomTab, isDataLoaded]);
   useEffect(() => { if (isDataLoaded) localStorage.setItem('dash_category', activeCategoryTab); }, [activeCategoryTab, isDataLoaded]);
@@ -342,7 +335,7 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
                 {showInfoTooltip && (
                   <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: '10px', padding: '15px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '8px', boxShadow: '0 10px 15px -3px var(--shadow-color)', color: 'var(--text-secondary)', fontSize: '0.85rem', width: 'max-content', zIndex: 100, textAlign: 'right' }}>
                     <strong style={{ display: 'block', color: 'var(--text-main)', marginBottom: '8px', fontSize: '1.05rem' }}>אלדר ויז'ואל</strong>
-                    <div style={{ marginBottom: '4px' }}>גרסת מערכת: 3.2.6</div>
+                    <div style={{ marginBottom: '4px' }}>גרסת מערכת: 3.2.7</div>
                     <div style={{ color: 'var(--text-muted)' }}>&copy; 2026 כל הזכויות שמורות.</div>
                   </div>
                 )}
