@@ -339,8 +339,35 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
   const handleSetItemColor = async (color) => { if (!contextMenu.item) return; const itemId = contextMenu.item._id; const updatedItems = items.map(i => i._id === itemId ? { ...i, itemColor: color } : i); setItems(updatedItems); closeContextMenus(); if (!contextMenu.item.isGlobal) { try { await fetch(`/api/data/${itemId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ itemColor: color }) }); } catch (error) {} } };
   
   const handleDeleteItem = async () => { if (contextMenu.item) { const itemId = contextMenu.item._id; setItems(items.map(i => i._id === itemId ? { ...i, isDeleted: true } : i)); closeContextMenus(); setToastMessage('הפריט הועבר לסל המחזור'); setTimeout(() => setToastMessage(null), 3000); if (!contextMenu.item.isGlobal) { fetch(`/api/data/${itemId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ isDeleted: true }) }); } } };
-  const handleRestoreItem = async (itemId) => { setItems(items.map(i => i._id === itemId ? { ...i, isDeleted: false } : i)); setIsRecycleBinOpen(false); try { await fetch(`/api/data/${itemId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ isDeleted: false }) }); } catch (error) {} };
-  const handlePermanentDelete = async (itemId) => { setItems(items.filter(i => i._id !== itemId)); setIsRecycleBinOpen(false); try { await fetch(`/api/data/${itemId}`, { method: 'DELETE' }); } catch (error) {} };
+const handleRestoreItem = async (itemId) => { 
+    setItems(items.map(i => i._id === itemId ? { ...i, isDeleted: false } : i)); 
+    // הורדנו את סגירת החלונית כדי לאפשר עבודה רציפה
+    setToastMessage('הקובץ שוחזר בהצלחה!');
+    setTimeout(() => setToastMessage(null), 3000);
+    
+    try { 
+      await fetch(`/api/data/${itemId}`, { 
+        method: 'PUT', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ isDeleted: false }) 
+      }); 
+    } catch (error) {
+      console.error("Failed to restore item:", error);
+    } 
+  };
+
+  const handlePermanentDelete = async (itemId) => { 
+    setItems(items.filter(i => i._id !== itemId)); 
+    // הורדנו את סגירת החלונית 
+    setToastMessage('הקובץ נמחק לצמיתות');
+    setTimeout(() => setToastMessage(null), 3000);
+    
+    try { 
+      await fetch(`/api/data/${itemId}`, { method: 'DELETE' }); 
+    } catch (error) {
+      console.error("Failed to permanently delete item:", error);
+    } 
+  };
   const handleOpenEdit = () => { if (contextMenu.item) { setEditItemData(contextMenu.item); setEditModalOpen(true); closeContextMenus(); } };
   const handleSaveEdit = async (e) => { e.preventDefault(); setItems(items.map(i => i._id === editItemData._id ? editItemData : i)); setEditModalOpen(false); if (!editItemData.isGlobal) fetch(`/api/data/${editItemData._id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: editItemData.title, link: editItemData.link }) }); };
   const togglePinToMain = async (e, itemId) => { e.preventDefault(); e.stopPropagation(); const currentPinnedCount = items.filter(i => i.isFavorite && i.isPinnedToMain && (i.spaceId || 'default') === currentSpaceId).length; let newPinState = false; let shouldUpdate = false; const updatedItems = items.map(item => { if (item._id === itemId) { if (!item.isPinnedToMain && currentPinnedCount >= 10) { setMaxPinsModalOpen(true); return item; } newPinState = !item.isPinnedToMain; shouldUpdate = true; return { ...item, isPinnedToMain: newPinState }; } return item; }); setItems(updatedItems); if (shouldUpdate && !items.find(i=>i._id===itemId)?.isGlobal) { fetch(`/api/data/${itemId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ isPinnedToMain: newPinState }) }); } };
