@@ -42,15 +42,15 @@ const getDocIconProps = (url) => {
   return { Icon: FileText, color: "var(--brand-color)", bg: "var(--bg-hover)" }; 
 };
 
-const defaultGlobalFavorites = [
-  { _id: 'g1', title: 'ג׳ימיני', link: 'https://gemini.google.com', section: 'links', isFavorite: true, isPinnedToMain: true, isGlobal: true },
-  { _id: 'g2', title: 'Chat GPT', link: 'https://chatgpt.com', section: 'links', isFavorite: true, isPinnedToMain: true, isGlobal: true },
-  { _id: 'g3', title: 'Claude', link: 'https://claude.ai', section: 'links', isFavorite: true, isPinnedToMain: true, isGlobal: true },
-  { _id: 'g4', title: 'YouTube', link: 'https://youtube.com', section: 'links', isFavorite: true, isPinnedToMain: true, isGlobal: true },
-  { _id: 'g5', title: 'Google', link: 'https://google.com', section: 'links', isFavorite: true, isPinnedToMain: true, isGlobal: true },
-  { _id: 'g6', title: 'Google Drive', link: 'https://drive.google.com', section: 'links', isFavorite: true, isPinnedToMain: true, isGlobal: true },
-  { _id: 'g7', title: 'Gmail', link: 'https://mail.google.com', section: 'links', isFavorite: true, isPinnedToMain: true, isGlobal: true },
-  { _id: 'g8', title: 'Facebook', link: 'https://facebook.com', section: 'links', isFavorite: true, isPinnedToMain: true, isGlobal: true }
+const defaultGlobalApps = [
+  { _id: 'g1', title: 'Gmail', link: 'https://mail.google.com', isGlobalApp: true },
+  { _id: 'g2', title: 'Google Calendar', link: 'https://calendar.google.com', isGlobalApp: true },
+  { _id: 'g3', title: 'Google Drive', link: 'https://drive.google.com', isGlobalApp: true },
+  { _id: 'g4', title: 'Google Keep', link: 'https://keep.google.com', isGlobalApp: true },
+  { _id: 'g5', title: 'Google Tasks', link: 'https://tasks.google.com', isGlobalApp: true },
+  { _id: 'g6', title: 'Gemini', link: 'https://gemini.google.com', isGlobalApp: true },
+  { _id: 'g7', title: 'ChatGPT', link: 'https://chatgpt.com', isGlobalApp: true },
+  { _id: 'g8', title: 'Claude', link: 'https://claude.ai', isGlobalApp: true }
 ];
 
 const defaultSpace = { _id: 'default', name: 'אישי', iconName: 'Home', color: 'var(--brand-color)', customTabs: ['יצירה'] };
@@ -131,7 +131,8 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
 
   const currentSpaceId = activeSpace?._id || 'default';
   const currentSpaceTabs = activeSpace?.customTabs || [];
-
+const [isEditAppModalOpen, setEditAppModalOpen] = useState(false);
+  const [editAppData, setEditAppData] = useState({ _id: '', title: '', link: '' });
   useEffect(() => { 
     setIsMounted(true); 
     if (window.innerWidth <= 768) { setSidebarOpen(false); }
@@ -337,8 +338,28 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
       }
     } 
   };
+const handleSaveGlobalApp = async (e) => {
+    e.preventDefault();
+    setItems(items.map(i => i._id === editAppData._id ? editAppData : i));
+    setEditAppModalOpen(false);
+    setToastMessage({ text: 'האפליקציה עודכנה בהצלחה!', type: 'success' });
+    setTimeout(() => setToastMessage(null), 3000);
+    
+    // שליחה לשרת (אם זה פריט שנשמר במסד הנתונים)
+    if (!editAppData._id.startsWith('ga')) { 
+      try {
+        await fetch(`/api/data/${editAppData._id}`, { 
+          method: 'PUT', 
+          headers: { 'Content-Type': 'application/json' }, 
+          body: JSON.stringify({ title: editAppData.title, link: editAppData.link }) 
+        });
+      } catch (error) {
+        console.error("Failed to update global app:", error);
+      }
+    }
+  };
 
-  const handleAddItem = async (e) => { e.preventDefault(); if (!newItemData.title || !newItemData.link) return; const currentPinnedCount = items.filter(i => i.isFavorite && i.isPinnedToMain && (i.spaceId || 'default') === currentSpaceId).length; const shouldPin = newItemSection === 'favorites' && currentPinnedCount < 10; const tempId = Date.now().toString(); const newItem = { _id: tempId, title: newItemData.title, link: newItemData.link, section: newItemSection === 'favorites' ? 'links' : newItemSection, isFavorite: newItemSection === 'favorites', isPinnedToMain: shouldPin, spaceId: currentSpaceId, customTab: newItemSection === 'favorites' ? null : activeCustomTab, order: items.length }; setItems([...items, newItem]); setAddItemModalOpen(false); setNewItemData({ title: '', link: '' }); try { const { _id, ...itemToSave } = newItem; const res = await fetch('/api/data', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(itemToSave) }); if (res.ok) { const savedItem = await res.json(); setItems(prev => prev.map(i => i._id === tempId ? { ...i, _id: savedItem._id } : i)); } } catch (error) {} };
+  const handleAddItem = async (e) => { e.preventDefault(); if (!newItemData.title || !newItemData.link) return; const currentPinnedCount = items.filter(i => i.isFavorite && i.isPinnedToMain && (i.spaceId || 'default') === currentSpaceId).length; const shouldPin = newItemSection === 'favorites' && currentPinnedCount < 10; const tempId = Date.now().toString(); const newItem = { _id: tempId, title: newItemData.title, link: newItemData.link, section: newItemSection === 'favorites' ? 'links' : newItemSection, isFavorite: newItemSection === 'favorites', isPinnedToMain: shouldPin, spaceId: currentSpaceId, customTab: activeCustomTab === 'favorites' ? null : activeCustomTab, order: items.length }; setItems([...items, newItem]); setAddItemModalOpen(false); setNewItemData({ title: '', link: '' }); try { const { _id, ...itemToSave } = newItem; const res = await fetch('/api/data', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(itemToSave) }); if (res.ok) { const savedItem = await res.json(); setItems(prev => prev.map(i => i._id === tempId ? { ...i, _id: savedItem._id } : i)); } } catch (error) {} };
   const handleContextMenu = (e, item) => { e.preventDefault(); const { x, y } = getContextMenuPosition(e); closeContextMenus(); setContextMenu({ visible: true, x, y, item: item }); };
   const handleSetItemColor = async (color) => { if (!contextMenu.item) return; const itemId = contextMenu.item._id; const updatedItems = items.map(i => i._id === itemId ? { ...i, itemColor: color } : i); setItems(updatedItems); closeContextMenus(); if (!contextMenu.item.isGlobal) { try { await fetch(`/api/data/${itemId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ itemColor: color }) }); } catch (error) {} } };
   
@@ -460,12 +481,12 @@ const handleOpenMoveTabModal = () => {
   const searchedItems = spaceItems.filter(item => item.title?.toLowerCase().includes(searchQuery.toLowerCase()));
   const deletedItems = items.filter(item => item.isDeleted);
 
-  const favoriteItems = searchedItems.filter(i => i.isFavorite);
+  const favoriteItems = searchedItems.filter(i => i.isFavorite && (searchQuery !== '' || (i.customTab || null) === activeCustomTab));
   const pinnedFavorites = favoriteItems.filter(i => i.isPinnedToMain);
   const documentItems = searchedItems.filter(i => i.section === 'documents' && (searchQuery !== '' || (i.customTab || null) === activeCustomTab));
   const visualItems = searchedItems.filter(i => i.section === 'visuals' && (searchQuery !== '' || (i.customTab || null) === activeCustomTab));
   const favArray = activeCategoryTab === 'ראשי' ? (searchQuery !== '' ? favoriteItems : pinnedFavorites.slice(0, 10)) : favoriteItems;
-
+const globalApps = items.filter(i => i.isGlobalApp);
   const renderDragOverlay = () => {
     if (!activeDragId) return null;
     const overlayStyle = { opacity: 0.65, transform: 'scale(1.05)', cursor: 'grabbing', pointerEvents: 'none' };
@@ -594,7 +615,28 @@ const handleOpenMoveTabModal = () => {
             <Search size={20} className={styles.searchIcon} />
             <input type="text" placeholder="חפש מסמכים, סרטונים ותוכן..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
           </div>
-
+{/* סרגל האפליקציות הגלובליות (Dock) */}
+          <div style={{ display: 'flex', gap: '15px', padding: '0 30px', marginBottom: '20px', overflowX: 'auto', scrollbarWidth: 'none' }} className="hideScrollbar">
+            {globalApps.map(app => (
+              <a 
+                key={app._id} 
+                href={app.link} 
+                target="_blank" 
+                rel="noreferrer" 
+                onContextMenu={(e) => handleContextMenu(e, app)} // משתמשים באותו קליק ימני
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', textDecoration: 'none', cursor: 'pointer', flexShrink: 0, width: '60px' }}
+              >
+                <div style={{ width: '44px', height: '44px', borderRadius: '14px', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border-color)', boxShadow: '0 4px 10px -3px var(--shadow-color)', transition: 'transform 0.2s, borderColor 0.2s' }}
+                     onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.borderColor = 'var(--brand-color)'; }}
+                     onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'var(--border-color)'; }}>
+                  <img src={getFavicon(app.link)} alt={app.title} style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover' }} onError={(e) => { e.target.src = '/globe.svg'; }} />
+                </div>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textAlign: 'center', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {app.title}
+                </span>
+              </a>
+            ))}
+          </div>
           <div className={styles.customTabsWrapper} style={{ display: 'flex', alignItems: 'center', position: 'relative', marginBottom: '30px', marginTop: '10px' }}>
             <span style={{ fontSize: '0.95rem', color: 'var(--text-muted)', marginLeft: '15px', whiteSpace: 'nowrap' }}>נושאים:</span>
             
@@ -711,24 +753,31 @@ const handleOpenMoveTabModal = () => {
         {/* --- חלונות קופצים (Modals) וקליק ימני --- */}
         {contextMenu.visible && (
           <div className={styles.contextMenu} style={{ top: contextMenu.y, left: contextMenu.x }}>
-            {contextMenu.item?.isFavorite && ( <button onClick={(e) => { togglePinToMain(e, contextMenu.item._id); closeContextMenus(); }} className={styles.contextMenuItem}><Pin size={16} /> {contextMenu.item.isPinnedToMain ? 'הסר מהמסך הראשי' : 'הצמד למסך הראשי'}</button> )}
-            {!contextMenu.item?.isGlobal && <button onClick={openMoveModal} className={styles.contextMenuItem}><MoveRight size={16} /> העבר מיקום...</button>}
-            {!contextMenu.item?.isGlobal && <button onClick={handleOpenEdit} className={styles.contextMenuItem}><Edit size={16} /> עריכת פריט</button>}
-            
-            {!contextMenu.item?.isGlobal && (
-              <div style={{ padding: '10px', borderTop: '1px solid var(--border-color)', marginTop: '5px', marginBottom: '5px' }}>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '8px' }}>צבע קו מתאר:</div>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  <button onClick={(e) => { e.stopPropagation(); handleSetItemColor(null); }} style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'transparent', border: '1px dashed var(--text-muted)', cursor: 'pointer' }} title="ללא צבע" />
-                  {AVAILABLE_COLORS.map(color => (
-                    <button key={color} onClick={(e) => { e.stopPropagation(); handleSetItemColor(color); }} style={{ width: '20px', height: '20px', borderRadius: '50%', background: color, border: contextMenu.item?.itemColor === color ? '2px solid var(--text-main)' : 'none', cursor: 'pointer', outline: contextMenu.item?.itemColor === color ? `1px solid ${color}` : 'none' }} title={color} />
-                  ))}
+            {/* אם זו אפליקציה גלובלית מהסרגל העליון */}
+            {contextMenu.item?.isGlobalApp ? (
+              <button onClick={() => { setEditAppData(contextMenu.item); setEditAppModalOpen(true); closeContextMenus(); }} className={styles.contextMenuItem}>
+                <Edit size={16} /> ערוך אפליקציה
+              </button>
+            ) : (
+              /* אם זה פריט רגיל (מסמך/סרטון/מועדף רגיל) */
+              <>
+                {contextMenu.item?.isFavorite && ( <button onClick={(e) => { togglePinToMain(e, contextMenu.item._id); closeContextMenus(); }} className={styles.contextMenuItem}><Pin size={16} /> {contextMenu.item.isPinnedToMain ? 'הסר מהמסך הראשי' : 'הצמד למסך הראשי'}</button> )}
+                <button onClick={openMoveModal} className={styles.contextMenuItem}><MoveRight size={16} /> העבר מיקום...</button>
+                <button onClick={handleOpenEdit} className={styles.contextMenuItem}><Edit size={16} /> עריכת פריט</button>
+                
+                <div style={{ padding: '10px', borderTop: '1px solid var(--border-color)', marginTop: '5px', marginBottom: '5px' }}>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '8px' }}>צבע קו מתאר:</div>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <button onClick={(e) => { e.stopPropagation(); handleSetItemColor(null); }} style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'transparent', border: '1px dashed var(--text-muted)', cursor: 'pointer' }} title="ללא צבע" />
+                    {AVAILABLE_COLORS.map(color => (
+                      <button key={color} onClick={(e) => { e.stopPropagation(); handleSetItemColor(color); }} style={{ width: '20px', height: '20px', borderRadius: '50%', background: color, border: contextMenu.item?.itemColor === color ? '2px solid var(--text-main)' : 'none', cursor: 'pointer', outline: contextMenu.item?.itemColor === color ? `1px solid ${color}` : 'none' }} title={color} />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
 
-            {!contextMenu.item?.isGlobal && <button onClick={handleDeleteItem} className={`${styles.contextMenuItem} ${styles.delete}`} style={{ borderTop: '1px solid var(--border-color)' }}><Trash2 size={16} /> מחיקת פריט</button>}
-            {contextMenu.item?.isGlobal && <div style={{padding: '10px', fontSize:'0.85rem', color:'var(--text-muted)'}}>זהו פריט קבוע שלא ניתן לעריכה.</div>}
+                <button onClick={handleDeleteItem} className={`${styles.contextMenuItem} ${styles.delete}`} style={{ borderTop: '1px solid var(--border-color)' }}><Trash2 size={16} /> מחיקת פריט</button>
+              </>
+            )}
           </div>
         )}
 
@@ -835,6 +884,23 @@ const handleOpenMoveTabModal = () => {
               <button onClick={() => setMaxPinsModalOpen(false)} className={styles.submitModalBtn} style={{ width: '100%' }}>הבנתי, תודה</button>
             </div>
           </div>
+        )}
+
+        {isEditAppModalOpen && ( 
+          <div className={styles.modalOverlay} onClick={() => setEditAppModalOpen(false)}>
+            <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+              <button onClick={() => setEditAppModalOpen(false)} className={styles.closeModal}><X size={20}/></button>
+              <h2>עריכת כלי עבודה</h2>
+              <p style={{ color: 'var(--text-secondary)', marginBottom: '20px', fontSize: '0.9rem' }}>
+                שנה את הקישור לאפליקציה המועדפת עליך (למשל: Outlook במקום Gmail). הלוגו יתעדכן אוטומטית.
+              </p>
+              <form onSubmit={handleSaveGlobalApp} className={styles.modalForm}>
+                <input type="text" placeholder="שם האפליקציה" value={editAppData.title} onChange={e => setEditAppData({...editAppData, title: e.target.value})} required autoFocus />
+                <input type="url" placeholder="קישור (URL)" value={editAppData.link} onChange={e => setEditAppData({...editAppData, link: e.target.value})} required style={{ direction: 'ltr', textAlign: 'left' }} />
+                <button type="submit" className={styles.submitModalBtn}>שמור שינויים</button>
+              </form>
+            </div>
+          </div> 
         )}
 
       {toastMessage && (
