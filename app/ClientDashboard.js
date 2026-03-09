@@ -77,10 +77,12 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
   const activeThemeKey = `${themeMode}-${themeTint}`;
   const activeThemeStyles = THEMES[activeThemeKey] || THEMES['dark-blue'];
   
-  const fullItems = initialItems.length > 0 ? initialItems : defaultGlobalFavorites;
-  const [spaces, setSpaces] = useState(initialSpaces.length > 0 ? initialSpaces : [defaultSpace]);
+const [items, setItems] = useState(() => {
+    const hasGlobals = initialItems.some(i => i.isGlobalApp);
+    return hasGlobals ? initialItems : [...initialItems, ...defaultGlobalApps];
+  });
+  const globalApps = items.filter(i => i.isGlobalApp).sort((a, b) => (a.order || 0) - (b.order || 0));  const [spaces, setSpaces] = useState(initialSpaces.length > 0 ? initialSpaces : [defaultSpace]);
   const [activeSpace, setActiveSpace] = useState(spaces[0]);
-  const [items, setItems] = useState(fullItems);
   
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -182,15 +184,84 @@ const [isEditAppModalOpen, setEditAppModalOpen] = useState(false);
   const handleDragOver = (event) => { const { over } = event; setActiveOverId(over ? over.id : null); };
 
   const handleUnifiedDragEnd = async (event) => {
-    setActiveDragId(null); setActiveOverId(null); 
-    const { active, over } = event; if (!over || active.id === over.id) return;
-    if (currentSpaceTabs.includes(active.id) && currentSpaceTabs.includes(over.id)) { const oldIndex = currentSpaceTabs.indexOf(active.id); const newIndex = currentSpaceTabs.indexOf(over.id); const updatedTabs = arrayMove(currentSpaceTabs, oldIndex, newIndex); const updatedSpace = { ...activeSpace, customTabs: updatedTabs }; setSpaces(spaces.map(s => s._id === activeSpace._id ? updatedSpace : s)); setActiveSpace(updatedSpace); if (activeSpace._id !== 'default') { try { await fetch(`/api/spaces/${activeSpace._id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customTabs: updatedTabs }) }); } catch (error) {} } return; }
-    const activeItem = items.find(i => i._id === active.id); const overItem = items.find(i => i._id === over.id);
-    if (activeItem && currentSpaceTabs.includes(over.id)) { if (activeItem.section === 'links') return; const targetTab = over.id; if (activeItem.customTab !== targetTab) { setItems(items.map(i => i._id === activeItem._id ? { ...i, customTab: targetTab } : i)); setActiveCustomTab(targetTab); localStorage.setItem('dash_tab', targetTab); if (!activeItem.isGlobal) { try { await fetch(`/api/data/${activeItem._id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customTab: targetTab }) }); } catch (error) {} } } return; }
-    if (activeItem && overItem) { let filteredArray = []; if (activeCategoryTab === 'ראשי' || activeCategoryTab === 'מועדפים') { if (favArray.find(i => i._id === active.id)) filteredArray = favArray; } if (filteredArray.length === 0 && (activeCategoryTab === 'ראשי' || activeCategoryTab === 'מסמכים')) { if (documentItems.find(i => i._id === active.id)) filteredArray = documentItems; } if (filteredArray.length === 0 && (activeCategoryTab === 'ראשי' || activeCategoryTab === 'סרטונים')) { if (visualItems.find(i => i._id === active.id)) filteredArray = visualItems; }
-      if (filteredArray.length > 0) { const oldIndex = filteredArray.findIndex(i => i._id === active.id); const newIndex = filteredArray.findIndex(i => i._id === over.id); if(oldIndex !== -1 && newIndex !== -1) { const reordered = arrayMove(filteredArray, oldIndex, newIndex); const orderUpdates = reordered.map((item, index) => ({ _id: item._id, order: index })); setItems(prev => prev.map(item => { const update = orderUpdates.find(u => u._id === item._id); return update ? { ...item, order: update.order } : item; })); try { await fetch('/api/reorder', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(orderUpdates) }); } catch (error) {} } } }
-  };
+    setActiveDragId(null); 
+    setActiveOverId(null); 
+    const { active, over } = event; 
+    if (!over || active.id === over.id) return;
+    
+    // גרירת נושאים (Tabs)
+    if (currentSpaceTabs.includes(active.id) && currentSpaceTabs.includes(over.id)) { 
+      const oldIndex = currentSpaceTabs.indexOf(active.id); 
+      const newIndex = currentSpaceTabs.indexOf(over.id); 
+      const updatedTabs = arrayMove(currentSpaceTabs, oldIndex, newIndex); 
+      const updatedSpace = { ...activeSpace, customTabs: updatedTabs }; 
+      setSpaces(spaces.map(s => s._id === activeSpace._id ? updatedSpace : s)); 
+      setActiveSpace(updatedSpace); 
+      if (activeSpace._id !== 'default') { 
+        try { await fetch(`/api/spaces/${activeSpace._id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customTabs: updatedTabs }) }); } catch (error) {} 
+      } 
+      return; 
+    }
+    
+    const activeItem = items.find(i => i._id === active.id); 
+    const overItem = items.find(i => i._id === over.id);
+    
+    // גרירת פריט לתוך נושא (Tab)
+    if (activeItem && currentSpaceTabs.includes(over.id)) { 
+      if (activeItem.section === 'links') return; 
+      const targetTab = over.id; 
+      if (activeItem.customTab !== targetTab) { 
+        setItems(items.map(i => i._id === activeItem._id ? { ...i, customTab: targetTab } : i)); 
+        setActiveCustomTab(targetTab); 
+        localStorage.setItem('dash_tab', targetTab); 
+        if (!activeItem.isGlobalApp) { 
+          try { await fetch(`/api/data/${activeItem._id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customTab: targetTab }) }); } catch (error) {} 
+        } 
+      } 
+      return; 
+    }
+    
+    // גרירת פריטים לשינוי סדר
+    if (activeItem && overItem) { 
+      let filteredArray = []; 
+      
+      // אם אנחנו גוררים אפליקציה גלובלית
+      if (activeItem.isGlobalApp && overItem.isGlobalApp) {
+        filteredArray = items.filter(i => i.isGlobalApp).sort((a, b) => (a.order || 0) - (b.order || 0));
+      } 
+      // שאר הפריטים
+      else {
+        if (activeCategoryTab === 'ראשי' || activeCategoryTab === 'מועדפים') { 
+          if (favArray.find(i => i._id === active.id)) filteredArray = favArray; 
+        } 
+        if (filteredArray.length === 0 && (activeCategoryTab === 'ראשי' || activeCategoryTab === 'מסמכים')) { 
+          if (documentItems.find(i => i._id === active.id)) filteredArray = documentItems; 
+        } 
+        if (filteredArray.length === 0 && (activeCategoryTab === 'ראשי' || activeCategoryTab === 'סרטונים')) { 
+          if (visualItems.find(i => i._id === active.id)) filteredArray = visualItems; 
+        }
+      }
 
+      // שמירת הסדר החדש
+      if (filteredArray.length > 0) { 
+        const oldIndex = filteredArray.findIndex(i => i._id === active.id); 
+        const newIndex = filteredArray.findIndex(i => i._id === over.id); 
+        if(oldIndex !== -1 && newIndex !== -1) { 
+          const reordered = arrayMove(filteredArray, oldIndex, newIndex); 
+          const orderUpdates = reordered.map((item, index) => ({ _id: item._id, order: index })); 
+          
+          setItems(prev => prev.map(item => { 
+            const update = orderUpdates.find(u => u._id === item._id); 
+            return update ? { ...item, order: update.order } : item; 
+          })); 
+          
+          try { 
+            await fetch('/api/reorder', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(orderUpdates) }); 
+          } catch (error) {} 
+        } 
+      } 
+    }
+  };
   const handleAddCustomTab = async (e) => { 
     e.preventDefault(); if (!newTabName || currentSpaceTabs.includes(newTabName)) return; 
     const updatedTabs = [...currentSpaceTabs, newTabName]; const updatedSpace = { ...activeSpace, customTabs: updatedTabs }; 
@@ -486,7 +557,7 @@ const handleOpenMoveTabModal = () => {
   const documentItems = searchedItems.filter(i => i.section === 'documents' && (searchQuery !== '' || (i.customTab || null) === activeCustomTab));
   const visualItems = searchedItems.filter(i => i.section === 'visuals' && (searchQuery !== '' || (i.customTab || null) === activeCustomTab));
   const favArray = activeCategoryTab === 'ראשי' ? (searchQuery !== '' ? favoriteItems : pinnedFavorites.slice(0, 10)) : favoriteItems;
-const globalApps = items.filter(i => i.isGlobalApp);
+
   const renderDragOverlay = () => {
     if (!activeDragId) return null;
     const overlayStyle = { opacity: 0.65, transform: 'scale(1.05)', cursor: 'grabbing', pointerEvents: 'none' };
@@ -616,26 +687,30 @@ const globalApps = items.filter(i => i.isGlobalApp);
             <input type="text" placeholder="חפש מסמכים, סרטונים ותוכן..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
           </div>
 {/* סרגל האפליקציות הגלובליות (Dock) */}
+         {/* סרגל האפליקציות הגלובליות (Dock) עם תמיכה בגרירה */}
           <div style={{ display: 'flex', gap: '15px', padding: '0 30px', marginBottom: '20px', overflowX: 'auto', scrollbarWidth: 'none' }} className="hideScrollbar">
-            {globalApps.map(app => (
-              <a 
-                key={app._id} 
-                href={app.link} 
-                target="_blank" 
-                rel="noreferrer" 
-                onContextMenu={(e) => handleContextMenu(e, app)} // משתמשים באותו קליק ימני
-                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', textDecoration: 'none', cursor: 'pointer', flexShrink: 0, width: '60px' }}
-              >
-                <div style={{ width: '44px', height: '44px', borderRadius: '14px', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border-color)', boxShadow: '0 4px 10px -3px var(--shadow-color)', transition: 'transform 0.2s, borderColor 0.2s' }}
-                     onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.borderColor = 'var(--brand-color)'; }}
-                     onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'var(--border-color)'; }}>
-                  <img src={getFavicon(app.link)} alt={app.title} style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover' }} onError={(e) => { e.target.src = '/globe.svg'; }} />
-                </div>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textAlign: 'center', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {app.title}
-                </span>
-              </a>
-            ))}
+            <SortableContext items={globalApps.map(a => a._id)} strategy={horizontalListSortingStrategy}>
+              {globalApps.map(app => (
+                <SortableItem 
+                  key={app._id} 
+                  id={app._id} 
+                  href={app.link}
+                  onContextMenu={(e) => handleContextMenu(e, app)}
+                  className={styles.dockItem}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', textDecoration: 'none', flexShrink: 0, width: '60px' }}
+                >
+                  <div style={{ width: '44px', height: '44px', borderRadius: '14px', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border-color)', boxShadow: '0 4px 10px -3px var(--shadow-color)', transition: 'transform 0.2s, borderColor 0.2s' }}
+                       onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.borderColor = 'var(--brand-color)'; }}
+                       onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'var(--border-color)'; }}>
+                    {/* חשוב: ה-draggable="false" על התמונה מונע מהדפדפן לחטוף את הגרירה של ה-Dnd-Kit */}
+                    <img draggable="false" src={getFavicon(app.link)} alt={app.title} style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover' }} onError={(e) => { e.target.src = '/globe.svg'; }} />
+                  </div>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textAlign: 'center', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {app.title}
+                  </span>
+                </SortableItem>
+              ))}
+            </SortableContext>
           </div>
           <div className={styles.customTabsWrapper} style={{ display: 'flex', alignItems: 'center', position: 'relative', marginBottom: '30px', marginTop: '10px' }}>
             <span style={{ fontSize: '0.95rem', color: 'var(--text-muted)', marginLeft: '15px', whiteSpace: 'nowrap' }}>נושאים:</span>
