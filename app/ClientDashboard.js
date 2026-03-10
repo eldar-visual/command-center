@@ -409,24 +409,47 @@ const [isEditAppModalOpen, setEditAppModalOpen] = useState(false);
       }
     } 
   };
-const handleSaveGlobalApp = async (e) => {
+
+  const handleSaveGlobalApp = async (e) => {
     e.preventDefault();
     setItems(items.map(i => i._id === editAppData._id ? editAppData : i));
     setEditAppModalOpen(false);
     setToastMessage({ text: 'האפליקציה עודכנה בהצלחה!', type: 'success' });
     setTimeout(() => setToastMessage(null), 3000);
     
-    // שליחה לשרת (אם זה פריט שנשמר במסד הנתונים)
+    // נשלח לשרת את העדכון רק אם זה פריט ששמור ב-DB (ולא פריט הדיפולט המקורי)
     if (!editAppData._id.startsWith('ga')) { 
       try {
         await fetch(`/api/data/${editAppData._id}`, { 
           method: 'PUT', 
           headers: { 'Content-Type': 'application/json' }, 
-          body: JSON.stringify({ title: editAppData.title, link: editAppData.link }) 
+          body: JSON.stringify({ 
+            title: editAppData.title, 
+            link: editAppData.link,
+            customIcon: editAppData.customIcon // <--- הנה התוספת החשובה!
+          }) 
         });
       } catch (error) {
         console.error("Failed to update global app:", error);
       }
+    }
+  };
+
+  const handleIconUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // הגבלת גודל ל-500KB כדי לא להכביד על מסד הנתונים
+      if (file.size > 500 * 1024) {
+        setToastMessage({ text: 'הקובץ גדול מדי. אנא העלה אייקון עד 500KB', type: 'delete' });
+        setTimeout(() => setToastMessage(null), 3000);
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        // שומרים את התמונה המומרת (Base64) בתוך ה-State של העריכה
+        setEditAppData({ ...editAppData, customIcon: reader.result });
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -688,7 +711,9 @@ const handleOpenMoveTabModal = () => {
           </div>
 {/* סרגל האפליקציות הגלובליות (Dock) */}
          {/* סרגל האפליקציות הגלובליות (Dock) עם תמיכה בגרירה */}
-          <div style={{ display: 'flex', gap: '15px', padding: '0 30px', marginBottom: '20px', overflowX: 'auto', scrollbarWidth: 'none' }} className="hideScrollbar">
+          
+          {/* סרגל האפליקציות הגלובליות - ממורכז ומעל הכל! */}
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', padding: '20px 30px 10px 30px', borderBottom: '1px solid var(--border-color)', overflowX: 'auto', scrollbarWidth: 'none', background: 'var(--bg-main)' }} className="hideScrollbar">
             <SortableContext items={globalApps.map(a => a._id)} strategy={horizontalListSortingStrategy}>
               {globalApps.map(app => (
                 <SortableItem 
@@ -697,21 +722,26 @@ const handleOpenMoveTabModal = () => {
                   href={app.link}
                   onContextMenu={(e) => handleContextMenu(e, app)}
                   className={styles.dockItem}
-                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', textDecoration: 'none', flexShrink: 0, width: '60px' }}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', textDecoration: 'none', flexShrink: 0, width: '65px' }}
                 >
-                  <div style={{ width: '44px', height: '44px', borderRadius: '14px', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border-color)', boxShadow: '0 4px 10px -3px var(--shadow-color)', transition: 'transform 0.2s, borderColor 0.2s' }}
-                       onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.borderColor = 'var(--brand-color)'; }}
+                  <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border-color)', boxShadow: '0 4px 10px -3px var(--shadow-color)', transition: 'transform 0.2s, borderColor 0.2s' }}
+                       onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.borderColor = 'var(--brand-color)'; }}
                        onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'var(--border-color)'; }}>
-                    {/* חשוב: ה-draggable="false" על התמונה מונע מהדפדפן לחטוף את הגרירה של ה-Dnd-Kit */}
-                    <img draggable="false" src={getFavicon(app.link)} alt={app.title} style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover' }} onError={(e) => { e.target.src = '/globe.svg'; }} />
+                    
+                    {/* כאן הקסם: מציג את האייקון המותאם אישית אם יש, אחרת את ברירת המחדל */}
+                    <img draggable="false" src={app.customIcon || getFavicon(app.link)} alt={app.title} style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover' }} onError={(e) => { e.target.src = '/globe.svg'; }} />
+                    
                   </div>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textAlign: 'center', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textAlign: 'center', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: '500' }}>
                     {app.title}
                   </span>
                 </SortableItem>
               ))}
             </SortableContext>
           </div>
+
+        
+            {/* ... שאר קוד ההידר שכבר קיים אצלך ... */}
           <div className={styles.customTabsWrapper} style={{ display: 'flex', alignItems: 'center', position: 'relative', marginBottom: '30px', marginTop: '10px' }}>
             <span style={{ fontSize: '0.95rem', color: 'var(--text-muted)', marginLeft: '15px', whiteSpace: 'nowrap' }}>נושאים:</span>
             
@@ -966,13 +996,36 @@ const handleOpenMoveTabModal = () => {
             <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
               <button onClick={() => setEditAppModalOpen(false)} className={styles.closeModal}><X size={20}/></button>
               <h2>עריכת כלי עבודה</h2>
-              <p style={{ color: 'var(--text-secondary)', marginBottom: '20px', fontSize: '0.9rem' }}>
-                שנה את הקישור לאפליקציה המועדפת עליך (למשל: Outlook במקום Gmail). הלוגו יתעדכן אוטומטית.
-              </p>
+              
               <form onSubmit={handleSaveGlobalApp} className={styles.modalForm}>
-                <input type="text" placeholder="שם האפליקציה" value={editAppData.title} onChange={e => setEditAppData({...editAppData, title: e.target.value})} required autoFocus />
-                <input type="url" placeholder="קישור (URL)" value={editAppData.link} onChange={e => setEditAppData({...editAppData, link: e.target.value})} required style={{ direction: 'ltr', textAlign: 'left' }} />
-                <button type="submit" className={styles.submitModalBtn}>שמור שינויים</button>
+                
+                {/* אזור העלאת האייקון */}
+                <div style={{ marginBottom: '5px', padding: '15px', background: 'var(--bg-hover)', borderRadius: '12px', border: '1px dashed var(--border-color)' }}>
+                  <label style={{ display: 'block', color: 'var(--text-secondary)', marginBottom: '12px', fontSize: '0.9rem', textAlign: 'center' }}>אייקון (PNG / ICO / JPG)</label>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px' }}>
+                    <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'var(--bg-main)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border-color)', boxShadow: '0 4px 10px var(--shadow-color)' }}>
+                      <img src={editAppData.customIcon || getFavicon(editAppData.link)} alt="Preview" style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} onError={(e) => { e.target.src = '/globe.svg'; }} />
+                    </div>
+                    
+                    {/* כפתור נסתר עם עיצוב יפה */}
+                    <label style={{ cursor: 'pointer', fontSize: '0.85rem', color: 'var(--brand-color)', display: 'flex', alignItems: 'center', gap: '5px', background: 'var(--card-float-bg)', padding: '6px 12px', borderRadius: '20px', border: '1px solid var(--border-color)' }}>
+                      <ImageIcon size={14} /> שנה אייקון...
+                      <input type="file" accept=".png, .ico, .jpg, .jpeg, .svg" onChange={handleIconUpload} style={{ display: 'none' }} />
+                    </label>
+                  </div>
+                </div>
+
+                <div style={{ marginTop: '10px' }}>
+                  <label style={{ display: 'block', color: 'var(--text-secondary)', marginBottom: '5px', fontSize: '0.85rem' }}>שם האפליקציה:</label>
+                  <input type="text" placeholder="שם האפליקציה" value={editAppData.title} onChange={e => setEditAppData({...editAppData, title: e.target.value})} required autoFocus />
+                </div>
+                
+                <div style={{ marginTop: '5px' }}>
+                  <label style={{ display: 'block', color: 'var(--text-secondary)', marginBottom: '5px', fontSize: '0.85rem' }}>קישור (URL):</label>
+                  <input type="url" placeholder="קישור (URL)" value={editAppData.link} onChange={e => setEditAppData({...editAppData, link: e.target.value})} required style={{ direction: 'ltr', textAlign: 'left' }} />
+                </div>
+
+                <button type="submit" className={styles.submitModalBtn} style={{ marginTop: '20px' }}>שמור שינויים</button>
               </form>
             </div>
           </div> 
