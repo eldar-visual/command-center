@@ -69,13 +69,13 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
   
   const [isMounted, setIsMounted] = useState(false);
   const [themeMode, setThemeMode] = useState('dark'); 
-  const [themeTint, setThemeTint] = useState('blue'); 
+  const [themeTint, setThemeTint] = useState('gray'); 
   const [showThemeMenu, setShowThemeMenu] = useState(false);
 
   const handleModeChange = (mode) => { setThemeMode(mode); localStorage.setItem('dash_theme_mode', mode); };
   const handleTintChange = (tint) => { setThemeTint(tint); localStorage.setItem('dash_theme_tint', tint); };
   const activeThemeKey = `${themeMode}-${themeTint}`;
-  const activeThemeStyles = THEMES[activeThemeKey] || THEMES['dark-blue'];
+  const activeThemeStyles = THEMES[activeThemeKey] || THEMES['dark-gray'];
   
 const [items, setItems] = useState(() => {
     const hasGlobals = initialItems.some(i => i.isGlobalApp);
@@ -154,6 +154,7 @@ const [isEditAppModalOpen, setEditAppModalOpen] = useState(false);
         if (found) targetSpace = found;
     }
     
+    
     setActiveSpace(targetSpace);
     
     const spaceTabs = targetSpace?.customTabs || [];
@@ -188,6 +189,34 @@ const [isEditAppModalOpen, setEditAppModalOpen] = useState(false);
     setActiveOverId(null); 
     const { active, over } = event; 
     if (!over || active.id === over.id) return;
+
+    
+    const activeSpaceObj = spaces.find(s => s._id === active.id);
+    const overSpaceObj = spaces.find(s => s._id === over.id);
+
+    if (activeSpaceObj && overSpaceObj) {
+      const oldIndex = spaces.findIndex(s => s._id === active.id);
+      const newIndex = spaces.findIndex(s => s._id === over.id);
+      if (oldIndex !== -1 && newIndex !== -1) {
+        // מעדכנים את הסדר בממשק באופן מיידי
+        const reorderedSpaces = arrayMove(spaces, oldIndex, newIndex);
+        setSpaces(reorderedSpaces);
+        
+        // שומרים את הסדר החדש בשרת
+        const orderUpdates = reorderedSpaces.map((space, index) => ({ _id: space._id, order: index }));
+        try {
+          await Promise.all(orderUpdates.map(update => 
+            fetch(`/api/spaces/${update._id}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ order: update.order })
+            })
+          ));
+        } catch (error) { 
+          console.error("Failed to save spaces order:", error); 
+        }
+      }
+      return;
     
     // גרירת נושאים (Tabs)
     if (currentSpaceTabs.includes(active.id) && currentSpaceTabs.includes(over.id)) { 
@@ -1055,4 +1084,4 @@ const handleOpenMoveTabModal = () => {
       </div>
     </DndContext>
   );
-}
+}}

@@ -43,7 +43,7 @@ export default async function Page() {
     // 3. שליפת הנתונים במקביל לביצועים מהירים
     const [rawData, rawSpaces] = await Promise.all([
       DashboardData.find({}).sort({ order: 1 }).lean(),
-      Space.find(spaceQuery).lean() // משתמשים בשאילתה המסוננת שלנו!
+      Space.find(spaceQuery).sort({ order: 1 }).lean(),
     ]);
 
     // 4. סריאליזציה (הכנת הנתונים ל-React)
