@@ -217,6 +217,7 @@ const [isEditAppModalOpen, setEditAppModalOpen] = useState(false);
         }
       }
       return;
+    }
     
     // גרירת נושאים (Tabs)
     if (currentSpaceTabs.includes(active.id) && currentSpaceTabs.includes(over.id)) { 
@@ -1084,4 +1085,4 @@ const handleOpenMoveTabModal = () => {
       </div>
     </DndContext>
   );
-}}
+}
