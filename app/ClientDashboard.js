@@ -647,12 +647,24 @@ const handleOpenMoveTabModal = () => {
              </button>
              
              <div className={styles.spacesList}>
-               {spaces.map(space => (
-                 <div key={space._id} className={`${styles.spaceItem} ${activeSpace?._id === space._id ? styles.activeSpace : ''}`} onClick={() => { setActiveSpace(space); setActiveCategoryTab('ראשי'); const firstTab = space.customTabs?.[0] || null; setActiveCustomTab(firstTab); localStorage.setItem('dash_spaceId', space._id); localStorage.setItem('dash_category', 'ראשי'); localStorage.setItem('dash_tab', firstTab || 'null'); if (window.innerWidth <= 768) setSidebarOpen(false); }} onContextMenu={(e) => handleSpaceContextMenu(e, space)} style={{ justifyContent: isSidebarOpen ? 'flex-start' : 'center', padding: isSidebarOpen ? '10px' : '12px 0', width: isSidebarOpen ? 'calc(100% - 40px)' : '40px', margin: '0 auto 5px auto', borderRadius: '8px', display: 'flex', alignItems: 'center' }} title={!isSidebarOpen ? space.name : ""}>
-                   <span className={styles.spaceIcon} style={{ margin: isSidebarOpen ? '0' : '0 auto', display: 'flex' }}>{renderSpaceIcon(space.iconName, space.color)}</span> 
-                   {isSidebarOpen && <span className={styles.spaceName} style={{ marginRight: '10px', whiteSpace: 'nowrap' }}>{space.name}</span>}
-                 </div>
-               ))}
+               <SortableContext items={spaces.map(s => s._id)} strategy={verticalListSortingStrategy}>
+                 {spaces.map(space => (
+                   <SortableItem 
+                     key={space._id} 
+                     id={space._id} 
+                     className={`${styles.spaceItem} ${activeSpace?._id === space._id ? styles.activeSpace : ''}`} 
+                     onClick={() => { setActiveSpace(space); setActiveCategoryTab('ראשי'); const firstTab = space.customTabs?.[0] || null; setActiveCustomTab(firstTab); localStorage.setItem('dash_spaceId', space._id); localStorage.setItem('dash_category', 'ראשי'); localStorage.setItem('dash_tab', firstTab || 'null'); if (window.innerWidth <= 768) setSidebarOpen(false); }} 
+                     onContextMenu={(e) => handleSpaceContextMenu(e, space)} 
+                     style={{ justifyContent: isSidebarOpen ? 'flex-start' : 'center', padding: isSidebarOpen ? '10px' : '12px 0', width: isSidebarOpen ? 'calc(100% - 40px)' : '40px', margin: '0 auto 5px auto', borderRadius: '8px', display: 'flex', alignItems: 'center' }} 
+                     title={!isSidebarOpen ? space.name : ""}
+                   >
+                     <span className={styles.spaceIcon} style={{ margin: isSidebarOpen ? '0' : '0 auto', display: 'flex' }}>
+                       {renderSpaceIcon(space.iconName, space.color)}
+                     </span> 
+                     {isSidebarOpen && <span className={styles.spaceName} style={{ marginRight: '10px', whiteSpace: 'nowrap' }}>{space.name}</span>}
+                   </SortableItem>
+                 ))}
+               </SortableContext>
              </div>
           </nav>
           
