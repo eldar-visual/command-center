@@ -21,16 +21,23 @@ const ICONS_MAP = { Folder, Home, Briefcase, Camera, Code, Book, Music, Video, I
 const AVAILABLE_COLORS = ['#ffffff', '#94a3b8', '#ef4444', '#f97316', '#f59e0b', '#10b981', '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899'];
 
 const THEMES = {
-  'dark-gray': { '--bg-main': '#0f111a', '--bg-sidebar': '#1e293b', '--bg-card': '#1e293b', '--bg-hover': 'rgba(255, 255, 255, 0.05)', '--border-color': '#334155', '--text-main': '#f8fafc', '--text-secondary': '#cbd5e1', '--text-muted': '#64748b', '--brand-color': '#38bdf8', '--card-float-bg': 'rgba(255, 255, 255, 0.02)', '--card-float-border': 'rgba(255, 255, 255, 0.05)', '--shadow-color': 'rgba(0,0,0,0.5)', '--modal-overlay': 'rgba(15, 17, 26, 0.8)', '--placeholder-bg': '#334155', '--play-overlay': 'rgba(0,0,0,0.4)' },
-  'light-gray': { '--bg-main': '#f8fafc', '--bg-sidebar': '#ffffff', '--bg-card': '#ffffff', '--bg-hover': 'rgba(0, 0, 0, 0.04)', '--border-color': '#e2e8f0', '--text-main': '#0f172a', '--text-secondary': '#334155', '--text-muted': '#64748b', '--brand-color': '#0ea5e9', '--card-float-bg': '#ffffff', '--card-float-border': '#e2e8f0', '--shadow-color': 'rgba(0,0,0,0.06)', '--modal-overlay': 'rgba(255, 255, 255, 0.8)', '--placeholder-bg': '#e2e8f0', '--play-overlay': 'rgba(255,255,255,0.4)' },
-  'dark-blue': { '--bg-main': '#020617', '--bg-sidebar': '#0f172a', '--bg-card': '#0f172a', '--bg-hover': 'rgba(56, 189, 248, 0.1)', '--border-color': '#1e293b', '--text-main': '#f0f9ff', '--text-secondary': '#bae6fd', '--text-muted': '#38bdf8', '--brand-color': '#38bdf8', '--card-float-bg': 'rgba(56, 189, 248, 0.02)', '--card-float-border': 'rgba(56, 189, 248, 0.1)', '--shadow-color': 'rgba(0,0,0,0.6)', '--modal-overlay': 'rgba(2, 6, 23, 0.8)', '--placeholder-bg': '#1e293b', '--play-overlay': 'rgba(0,0,0,0.5)' },
-  'light-blue': { '--bg-main': '#f0f9ff', '--bg-sidebar': '#e0f2fe', '--bg-card': '#ffffff', '--bg-hover': 'rgba(2, 132, 199, 0.06)', '--border-color': '#bae6fd', '--text-main': '#0c4a6e', '--text-secondary': '#0369a1', '--text-muted': '#0284c7', '--brand-color': '#0284c7', '--card-float-bg': '#ffffff', '--card-float-border': '#bae6fd', '--shadow-color': 'rgba(2, 132, 199, 0.08)', '--modal-overlay': 'rgba(240, 249, 255, 0.8)', '--placeholder-bg': '#e0f2fe', '--play-overlay': 'rgba(255,255,255,0.5)' },
-  'dark-purple': { '--bg-main': '#150b24', '--bg-sidebar': '#1f1238', '--bg-card': '#1f1238', '--bg-hover': 'rgba(168, 85, 247, 0.15)', '--border-color': '#331e54', '--text-main': '#faf5ff', '--text-secondary': '#e9d5ff', '--text-muted': '#c084fc', '--brand-color': '#c084fc', '--card-float-bg': 'rgba(168, 85, 247, 0.03)', '--card-float-border': 'rgba(168, 85, 247, 0.15)', '--shadow-color': 'rgba(0,0,0,0.6)', '--modal-overlay': 'rgba(21, 11, 36, 0.8)', '--placeholder-bg': '#331e54', '--play-overlay': 'rgba(0,0,0,0.5)' },
-  'light-purple': { '--bg-main': '#faf5ff', '--bg-sidebar': '#f3e8ff', '--bg-card': '#ffffff', '--bg-hover': 'rgba(147, 51, 234, 0.06)', '--border-color': '#e9d5ff', '--text-main': '#3b0764', '--text-secondary': '#581c87', '--text-muted': '#7e22ce', '--brand-color': '#9333ea', '--card-float-bg': '#ffffff', '--card-float-border': '#e9d5ff', '--shadow-color': 'rgba(147, 51, 234, 0.08)', '--modal-overlay': 'rgba(250, 245, 255, 0.8)', '--placeholder-bg': '#f3e8ff', '--play-overlay': 'rgba(255,255,255,0.5)' },
-  'dark-green': { '--bg-main': '#021a10', '--bg-sidebar': '#063622', '--bg-card': '#063622', '--bg-hover': 'rgba(16, 185, 129, 0.15)', '--border-color': '#0b5e3f', '--text-main': '#ecfdf5', '--text-secondary': '#a7f3d0', '--text-muted': '#34d399', '--brand-color': '#10b981', '--card-float-bg': 'rgba(16, 185, 129, 0.02)', '--card-float-border': 'rgba(16, 185, 129, 0.15)', '--shadow-color': 'rgba(0,0,0,0.6)', '--modal-overlay': 'rgba(2, 26, 16, 0.8)', '--placeholder-bg': '#0b5e3f', '--play-overlay': 'rgba(0,0,0,0.5)' },
-  'light-green': { '--bg-main': '#ecfdf5', '--bg-sidebar': '#d1fae5', '--bg-card': '#ffffff', '--bg-hover': 'rgba(5, 150, 105, 0.06)', '--border-color': '#a7f3d0', '--text-main': '#022c22', '--text-secondary': '#064e3b', '--text-muted': '#059669', '--brand-color': '#059669', '--card-float-bg': '#ffffff', '--card-float-border': '#a7f3d0', '--shadow-color': 'rgba(5, 150, 105, 0.08)', '--modal-overlay': 'rgba(236, 253, 245, 0.8)', '--placeholder-bg': '#d1fae5', '--play-overlay': 'rgba(255,255,255,0.5)' },
-  'dark-red': { '--bg-main': '#1f0909', '--bg-sidebar': '#381010', '--bg-card': '#381010', '--bg-hover': 'rgba(239, 68, 68, 0.15)', '--border-color': '#5c1b1b', '--text-main': '#fef2f2', '--text-secondary': '#fecaca', '--text-muted': '#f87171', '--brand-color': '#ef4444', '--card-float-bg': 'rgba(239, 68, 68, 0.02)', '--card-float-border': 'rgba(239, 68, 68, 0.15)', '--shadow-color': 'rgba(0,0,0,0.6)', '--modal-overlay': 'rgba(31, 9, 9, 0.8)', '--placeholder-bg': '#5c1b1b', '--play-overlay': 'rgba(0,0,0,0.5)' },
-  'light-red': { '--bg-main': '#fef2f2', '--bg-sidebar': '#fee2e2', '--bg-card': '#ffffff', '--bg-hover': 'rgba(220, 38, 38, 0.06)', '--border-color': '#fca5a5', '--text-main': '#450a0a', '--text-secondary': '#7f1d1d', '--text-muted': '#dc2626', '--brand-color': '#dc2626', '--card-float-bg': '#ffffff', '--card-float-border': '#fca5a5', '--shadow-color': 'rgba(220, 38, 38, 0.08)', '--modal-overlay': 'rgba(254, 242, 242, 0.8)', '--placeholder-bg': '#fee2e2', '--play-overlay': 'rgba(255,255,255,0.5)' }
+  'dark-gray': { 
+    '--bg-main': '#0b0f19', /* רקע ראשי כהה מאוד לעומק */
+    '--bg-sidebar': '#131b2c', /* סרגל צד קצת יותר בהיר */
+    '--bg-card': '#1a2235', /* כרטיסיות בולטות החוצה */
+    '--bg-hover': 'rgba(255, 255, 255, 0.08)', 
+    '--border-color': 'rgba(255, 255, 255, 0.06)', /* גבולות זכוכית עדינים */
+    '--text-main': '#f8fafc', 
+    '--text-secondary': '#cbd5e1', 
+    '--text-muted': '#8494aa', 
+    '--brand-color': '#38bdf8', 
+    '--card-float-bg': 'linear-gradient(145deg, rgba(26, 34, 53, 0.9) 0%, rgba(20, 26, 40, 0.8) 100%)', 
+    '--card-float-border': 'rgba(255, 255, 255, 0.08)', 
+    '--shadow-color': 'rgba(0,0,0,0.4)', 
+    '--modal-overlay': 'rgba(11, 15, 25, 0.85)', 
+    '--placeholder-bg': '#1e293b', 
+    '--play-overlay': 'rgba(0,0,0,0.4)' 
+  }
 };
 
 const getDocIconProps = (url) => {
@@ -86,6 +93,7 @@ const [items, setItems] = useState(() => {
   
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [activeCustomTab, setActiveCustomTab] = useState(spaces[0]?.customTabs?.[0] || null);
   const [activeCategoryTab, setActiveCategoryTab] = useState('ראשי');
 
@@ -649,19 +657,26 @@ const handleOpenMoveTabModal = () => {
              <div className={styles.spacesList}>
                <SortableContext items={spaces.map(s => s._id)} strategy={verticalListSortingStrategy}>
                  {spaces.map(space => (
-                   <SortableItem 
+                  <SortableItem 
                      key={space._id} 
                      id={space._id} 
                      className={`${styles.spaceItem} ${activeSpace?._id === space._id ? styles.activeSpace : ''}`} 
-                     onClick={() => { setActiveSpace(space); setActiveCategoryTab('ראשי'); const firstTab = space.customTabs?.[0] || null; setActiveCustomTab(firstTab); localStorage.setItem('dash_spaceId', space._id); localStorage.setItem('dash_category', 'ראשי'); localStorage.setItem('dash_tab', firstTab || 'null'); if (window.innerWidth <= 768) setSidebarOpen(false); }} 
+                     onClick={() => { /* ... אותו קוד onClick ... */ }} 
                      onContextMenu={(e) => handleSpaceContextMenu(e, space)} 
-                     style={{ justifyContent: isSidebarOpen ? 'flex-start' : 'center', padding: isSidebarOpen ? '10px' : '12px 0', width: isSidebarOpen ? 'calc(100% - 40px)' : '40px', margin: '0 auto 5px auto', borderRadius: '8px', display: 'flex', alignItems: 'center' }} 
+                     style={{ 
+                       justifyContent: isSidebarOpen ? 'flex-start' : 'center', padding: isSidebarOpen ? '10px' : '12px 0', width: isSidebarOpen ? 'calc(100% - 40px)' : '40px', margin: '0 auto 5px auto', borderRadius: '8px', display: 'flex', alignItems: 'center',
+                       color: activeSpace?._id === space._id ? 'var(--text-main)' : space.color, // צבע חי גם כשלא פעיל!
+                       opacity: activeSpace?._id === space._id ? 1 : 0.6, // משדר "מנוחה" ולא מוות
+                       transition: 'all 0.2s ease'
+                     }} 
                      title={!isSidebarOpen ? space.name : ""}
+                     onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+                     onMouseLeave={(e) => { if (activeSpace?._id !== space._id) e.currentTarget.style.opacity = '0.6'; }}
                    >
                      <span className={styles.spaceIcon} style={{ margin: isSidebarOpen ? '0' : '0 auto', display: 'flex' }}>
                        {renderSpaceIcon(space.iconName, space.color)}
                      </span> 
-                     {isSidebarOpen && <span className={styles.spaceName} style={{ marginRight: '10px', whiteSpace: 'nowrap' }}>{space.name}</span>}
+                     {isSidebarOpen && <span className={styles.spaceName} style={{ marginRight: '10px', whiteSpace: 'nowrap', fontWeight: activeSpace?._id === space._id ? 'bold' : 'normal' }}>{space.name}</span>}
                    </SortableItem>
                  ))}
                </SortableContext>
@@ -701,12 +716,53 @@ const handleOpenMoveTabModal = () => {
               <button onClick={() => setSidebarOpen(true)} className={styles.mobileHamburger}><Menu size={24} /></button>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 {activeSpace && renderSpaceIcon(activeSpace.iconName, activeSpace.color, 24)}
-                <h1 className={styles.spaceTitle} style={{ borderBottom: `3px solid ${activeSpace?.color || 'var(--brand-color)'}`, margin: 0 }}>{activeSpace?.name || 'בחר מרחב'}</h1>
-              </div>
+                  <h1 className={styles.spaceTitle} style={{ borderBottom: `3px solid ${activeSpace?.color || 'var(--brand-color)'}`, margin: 0, fontWeight: 900, letterSpacing: '0.5px' }}>{activeSpace?.name || 'בחר מרחב'}</h1>              </div>
             </div>
             
             <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-              
+              {/* --- שורת חיפוש נפתחת (Expandable) --- */}
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                background: isSearchExpanded ? 'var(--bg-hover)' : 'transparent', 
+                borderRadius: '24px', 
+                border: isSearchExpanded ? '1px solid var(--border-color)' : '1px solid transparent', 
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                padding: isSearchExpanded ? '2px 12px 2px 2px' : '0' 
+              }}>
+                <button 
+                  onClick={() => {
+                    if (isSearchExpanded && searchQuery) {
+                      setSearchQuery(''); // איפוס החיפוש אם סוגרים
+                    }
+                    setIsSearchExpanded(!isSearchExpanded);
+                  }} 
+                  className={styles.settingsBtn} 
+                  style={{ padding: '8px', color: isSearchExpanded || searchQuery ? 'var(--brand-color)' : 'var(--text-muted)' }}
+                  title="חיפוש"
+                >
+                  <Search size={20} />
+                </button>
+                <input 
+                  type="text" 
+                  placeholder="חפש תוכן..." 
+                  value={searchQuery} 
+                  onChange={(e) => setSearchQuery(e.target.value)} 
+                  style={{ 
+                    width: isSearchExpanded ? '220px' : '0px', /* רוחב של 3-4 מילים */
+                    padding: isSearchExpanded ? '8px 10px 8px 0' : '0px', 
+                    opacity: isSearchExpanded ? 1 : 0, 
+                    background: 'transparent', 
+                    border: 'none', 
+                    color: 'var(--text-main)', 
+                    outline: 'none', 
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    visibility: isSearchExpanded ? 'visible' : 'hidden',
+                    fontSize: '0.95rem'
+                  }}
+                />
+              </div>
+              {/* ------------------------------------- */}
               <div style={{ position: 'relative' }}>
                 <button onClick={(e) => { e.stopPropagation(); setShowThemeMenu(!showThemeMenu); }} className={styles.settingsBtn} title="עיצוב אישי">
                   <Palette size={20} />
@@ -751,10 +807,7 @@ const handleOpenMoveTabModal = () => {
             <Search size={20} className={styles.searchIcon} />
             <input type="text" placeholder="חפש מסמכים, סרטונים ותוכן..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
           </div>
-{/* סרגל האפליקציות הגלובליות (Dock) */}
-         {/* סרגל האפליקציות הגלובליות (Dock) עם תמיכה בגרירה */}
-          
-          {/* סרגל האפליקציות הגלובליות - ממורכז ומעל הכל! */}
+
           <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', padding: '20px 30px 10px 30px', borderBottom: '1px solid var(--border-color)', overflowX: 'auto', scrollbarWidth: 'none', background: 'var(--bg-main)' }} className="hideScrollbar">
             <SortableContext items={globalApps.map(a => a._id)} strategy={horizontalListSortingStrategy}>
               {globalApps.map(app => (
@@ -808,11 +861,53 @@ const handleOpenMoveTabModal = () => {
             </div>
           </div>
 
-          <div className={styles.categoryTabsWrapper}>
-            <button onClick={() => { setActiveCategoryTab('ראשי'); localStorage.setItem('dash_category', 'ראשי'); }} className={`${styles.categoryTab} ${activeCategoryTab === 'ראשי' ? styles.activeCategoryTab : ''}`}><LayoutGrid size={16} /> ראשי</button>
-            <button onClick={() => { setActiveCategoryTab('מועדפים'); localStorage.setItem('dash_category', 'מועדפים'); }} className={`${styles.categoryTab} ${activeCategoryTab === 'מועדפים' ? styles.activeCategoryTab : ''}`}><Star size={16} /> מועדפים ({favoriteItems.length})</button>
-            <button onClick={() => { setActiveCategoryTab('מסמכים'); localStorage.setItem('dash_category', 'מסמכים'); }} className={`${styles.categoryTab} ${activeCategoryTab === 'מסמכים' ? styles.activeCategoryTab : ''}`}><FileText size={16} /> מסמכים ({documentItems.length})</button>
-            <button onClick={() => { setActiveCategoryTab('סרטונים'); localStorage.setItem('dash_category', 'סרטונים'); }} className={`${styles.categoryTab} ${activeCategoryTab === 'סרטונים' ? styles.activeCategoryTab : ''}`}><Play size={16} /> סרטונים ({visualItems.length})</button>
+         <div className={styles.categoryTabsWrapper} style={{ borderBottom: '1px solid var(--border-color)', marginBottom: '30px', paddingBottom: '0' }}>
+            {[
+              { id: 'ראשי', icon: LayoutGrid, label: 'ראשי' },
+              { id: 'מועדפים', icon: Star, label: `מועדפים (${favoriteItems.length})` },
+              { id: 'מסמכים', icon: FileText, label: `מסמכים (${documentItems.length})` },
+              { id: 'סרטונים', icon: Play, label: `סרטונים (${visualItems.length})` }
+            ].map(tab => {
+              const isActive = activeCategoryTab === tab.id;
+              const TabIcon = tab.icon;
+              const currentBrandColor = activeSpace?.color || 'var(--brand-color)';
+              
+              return (
+                <button 
+                  key={tab.id}
+                  onClick={() => { setActiveCategoryTab(tab.id); localStorage.setItem('dash_category', tab.id); }} 
+                  className={styles.categoryTab}
+                  style={{
+                    color: isActive ? currentBrandColor : 'var(--text-muted)',
+                    opacity: isActive ? 1 : 0.7,
+                    borderBottom: isActive ? `2px solid ${currentBrandColor}` : '2px solid transparent',
+                    paddingBottom: '12px',
+                    marginBottom: '-1px', // גורם לקו התחתון לדרוס את הקו של המסגרת
+                    transition: 'all 0.3s ease',
+                    fontWeight: isActive ? '600' : '400',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    background: 'transparent',
+                    cursor: 'pointer'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.color = currentBrandColor;
+                      e.currentTarget.style.opacity = '0.9';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.color = 'var(--text-muted)';
+                      e.currentTarget.style.opacity = '0.7';
+                    }
+                  }}
+                >
+                  <TabIcon size={16} /> {tab.label}
+                </button>
+              )
+            })}
           </div>
 
           <div className={`${styles.scrollableContent} ${styles.animatedContent}`} key={`${activeSpace?._id}-${activeCustomTab}-${activeCategoryTab}-${searchQuery}`}>
