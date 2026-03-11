@@ -20,13 +20,14 @@ import styles from './page.module.css';
 const ICONS_MAP = { Folder, Home, Briefcase, Camera, Code, Book, Music, Video, ImageIcon, Mic, Heart, Star, Cloud, Shield, Zap, Target, Umbrella, Coffee, Globe, Key, MapPin };
 const AVAILABLE_COLORS = ['#ffffff', '#94a3b8', '#ef4444', '#f97316', '#f59e0b', '#10b981', '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899'];
 
+// עדכון פלטת העיצוב (מראה עמוק ומדורג יותר - Glassmorphism)
 const THEMES = {
   'dark-gray': { 
-    '--bg-main': '#0b0f19', /* רקע ראשי כהה מאוד לעומק */
-    '--bg-sidebar': '#131b2c', /* סרגל צד קצת יותר בהיר */
-    '--bg-card': '#1a2235', /* כרטיסיות בולטות החוצה */
+    '--bg-main': '#0b0f19', 
+    '--bg-sidebar': '#131b2c', 
+    '--bg-card': '#1a2235', 
     '--bg-hover': 'rgba(255, 255, 255, 0.08)', 
-    '--border-color': 'rgba(255, 255, 255, 0.06)', /* גבולות זכוכית עדינים */
+    '--border-color': 'rgba(255, 255, 255, 0.06)', 
     '--text-main': '#f8fafc', 
     '--text-secondary': '#cbd5e1', 
     '--text-muted': '#8494aa', 
@@ -37,7 +38,16 @@ const THEMES = {
     '--modal-overlay': 'rgba(11, 15, 25, 0.85)', 
     '--placeholder-bg': '#1e293b', 
     '--play-overlay': 'rgba(0,0,0,0.4)' 
-  }
+  },
+  'light-gray': { '--bg-main': '#f8fafc', '--bg-sidebar': '#ffffff', '--bg-card': '#ffffff', '--bg-hover': 'rgba(0, 0, 0, 0.04)', '--border-color': '#e2e8f0', '--text-main': '#0f172a', '--text-secondary': '#334155', '--text-muted': '#64748b', '--brand-color': '#0ea5e9', '--card-float-bg': '#ffffff', '--card-float-border': '#e2e8f0', '--shadow-color': 'rgba(0,0,0,0.06)', '--modal-overlay': 'rgba(255, 255, 255, 0.8)', '--placeholder-bg': '#e2e8f0', '--play-overlay': 'rgba(255,255,255,0.4)' },
+  'dark-blue': { '--bg-main': '#020617', '--bg-sidebar': '#0f172a', '--bg-card': '#0f172a', '--bg-hover': 'rgba(56, 189, 248, 0.1)', '--border-color': '#1e293b', '--text-main': '#f0f9ff', '--text-secondary': '#bae6fd', '--text-muted': '#38bdf8', '--brand-color': '#38bdf8', '--card-float-bg': 'rgba(56, 189, 248, 0.02)', '--card-float-border': 'rgba(56, 189, 248, 0.1)', '--shadow-color': 'rgba(0,0,0,0.6)', '--modal-overlay': 'rgba(2, 6, 23, 0.8)', '--placeholder-bg': '#1e293b', '--play-overlay': 'rgba(0,0,0,0.5)' },
+  'light-blue': { '--bg-main': '#f0f9ff', '--bg-sidebar': '#e0f2fe', '--bg-card': '#ffffff', '--bg-hover': 'rgba(2, 132, 199, 0.06)', '--border-color': '#bae6fd', '--text-main': '#0c4a6e', '--text-secondary': '#0369a1', '--text-muted': '#0284c7', '--brand-color': '#0284c7', '--card-float-bg': '#ffffff', '--card-float-border': '#bae6fd', '--shadow-color': 'rgba(2, 132, 199, 0.08)', '--modal-overlay': 'rgba(240, 249, 255, 0.8)', '--placeholder-bg': '#e0f2fe', '--play-overlay': 'rgba(255,255,255,0.5)' },
+  'dark-purple': { '--bg-main': '#150b24', '--bg-sidebar': '#1f1238', '--bg-card': '#1f1238', '--bg-hover': 'rgba(168, 85, 247, 0.15)', '--border-color': '#331e54', '--text-main': '#faf5ff', '--text-secondary': '#e9d5ff', '--text-muted': '#c084fc', '--brand-color': '#c084fc', '--card-float-bg': 'rgba(168, 85, 247, 0.03)', '--card-float-border': 'rgba(168, 85, 247, 0.15)', '--shadow-color': 'rgba(0,0,0,0.6)', '--modal-overlay': 'rgba(21, 11, 36, 0.8)', '--placeholder-bg': '#331e54', '--play-overlay': 'rgba(0,0,0,0.5)' },
+  'light-purple': { '--bg-main': '#faf5ff', '--bg-sidebar': '#f3e8ff', '--bg-card': '#ffffff', '--bg-hover': 'rgba(147, 51, 234, 0.06)', '--border-color': '#e9d5ff', '--text-main': '#3b0764', '--text-secondary': '#581c87', '--text-muted': '#7e22ce', '--brand-color': '#9333ea', '--card-float-bg': '#ffffff', '--card-float-border': '#e9d5ff', '--shadow-color': 'rgba(147, 51, 234, 0.08)', '--modal-overlay': 'rgba(250, 245, 255, 0.8)', '--placeholder-bg': '#f3e8ff', '--play-overlay': 'rgba(255,255,255,0.5)' },
+  'dark-green': { '--bg-main': '#021a10', '--bg-sidebar': '#063622', '--bg-card': '#063622', '--bg-hover': 'rgba(16, 185, 129, 0.15)', '--border-color': '#0b5e3f', '--text-main': '#ecfdf5', '--text-secondary': '#a7f3d0', '--text-muted': '#34d399', '--brand-color': '#10b981', '--card-float-bg': 'rgba(16, 185, 129, 0.02)', '--card-float-border': 'rgba(16, 185, 129, 0.15)', '--shadow-color': 'rgba(0,0,0,0.6)', '--modal-overlay': 'rgba(2, 26, 16, 0.8)', '--placeholder-bg': '#0b5e3f', '--play-overlay': 'rgba(0,0,0,0.5)' },
+  'light-green': { '--bg-main': '#ecfdf5', '--bg-sidebar': '#d1fae5', '--bg-card': '#ffffff', '--bg-hover': 'rgba(5, 150, 105, 0.06)', '--border-color': '#a7f3d0', '--text-main': '#022c22', '--text-secondary': '#064e3b', '--text-muted': '#059669', '--brand-color': '#059669', '--card-float-bg': '#ffffff', '--card-float-border': '#a7f3d0', '--shadow-color': 'rgba(5, 150, 105, 0.08)', '--modal-overlay': 'rgba(236, 253, 245, 0.8)', '--placeholder-bg': '#d1fae5', '--play-overlay': 'rgba(255,255,255,0.5)' },
+  'dark-red': { '--bg-main': '#1f0909', '--bg-sidebar': '#381010', '--bg-card': '#381010', '--bg-hover': 'rgba(239, 68, 68, 0.15)', '--border-color': '#5c1b1b', '--text-main': '#fef2f2', '--text-secondary': '#fecaca', '--text-muted': '#f87171', '--brand-color': '#ef4444', '--card-float-bg': 'rgba(239, 68, 68, 0.02)', '--card-float-border': 'rgba(239, 68, 68, 0.15)', '--shadow-color': 'rgba(0,0,0,0.6)', '--modal-overlay': 'rgba(31, 9, 9, 0.8)', '--placeholder-bg': '#5c1b1b', '--play-overlay': 'rgba(0,0,0,0.5)' },
+  'light-red': { '--bg-main': '#fef2f2', '--bg-sidebar': '#fee2e2', '--bg-card': '#ffffff', '--bg-hover': 'rgba(220, 38, 38, 0.06)', '--border-color': '#fca5a5', '--text-main': '#450a0a', '--text-secondary': '#7f1d1d', '--text-muted': '#dc2626', '--brand-color': '#dc2626', '--card-float-bg': '#ffffff', '--card-float-border': '#fca5a5', '--shadow-color': 'rgba(220, 38, 38, 0.08)', '--modal-overlay': 'rgba(254, 242, 242, 0.8)', '--placeholder-bg': '#fee2e2', '--play-overlay': 'rgba(255,255,255,0.5)' }
 };
 
 const getDocIconProps = (url) => {
@@ -50,23 +60,23 @@ const getDocIconProps = (url) => {
 };
 
 const defaultGlobalApps = [
-  { _id: 'g1', title: 'Gmail', link: 'https://mail.google.com', isGlobalApp: true },
-  { _id: 'g2', title: 'Google Calendar', link: 'https://calendar.google.com', isGlobalApp: true },
-  { _id: 'g3', title: 'Google Drive', link: 'https://drive.google.com', isGlobalApp: true },
-  { _id: 'g4', title: 'Google Keep', link: 'https://keep.google.com', isGlobalApp: true },
-  { _id: 'g5', title: 'Google Tasks', link: 'https://tasks.google.com', isGlobalApp: true },
-  { _id: 'g6', title: 'Gemini', link: 'https://gemini.google.com', isGlobalApp: true },
-  { _id: 'g7', title: 'ChatGPT', link: 'https://chatgpt.com', isGlobalApp: true },
-  { _id: 'g8', title: 'Claude', link: 'https://claude.ai', isGlobalApp: true }
+  { _id: 'g1', title: 'Gmail', link: 'https://mail.google.com', isGlobalApp: true, customIcon: 'https://ssl.gstatic.com/images/branding/product/1x/gmail_32dp.png' },
+  { _id: 'g2', title: 'Google Calendar', link: 'https://calendar.google.com', isGlobalApp: true, customIcon: 'https://ssl.gstatic.com/images/branding/product/1x/calendar_32dp.png' },
+  { _id: 'g3', title: 'Google Drive', link: 'https://drive.google.com', isGlobalApp: true, customIcon: 'https://ssl.gstatic.com/images/branding/product/1x/drive_32dp.png' },
+  { _id: 'g4', title: 'Google Keep', link: 'https://keep.google.com', isGlobalApp: true, customIcon: 'https://ssl.gstatic.com/images/branding/product/1x/keep_32dp.png' },
+  { _id: 'g5', title: 'Google Tasks', link: 'https://tasks.google.com', isGlobalApp: true, customIcon: 'https://ssl.gstatic.com/images/branding/product/1x/tasks_32dp.png' },
+  { _id: 'g6', title: 'Gemini', link: 'https://gemini.google.com', isGlobalApp: true, customIcon: 'https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304ff6292a690345.svg' },
+  { _id: 'g7', title: 'ChatGPT', link: 'https://chatgpt.com', isGlobalApp: true, customIcon: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/ChatGPT_logo.svg/512px-ChatGPT_logo.svg.png' },
+  { _id: 'g8', title: 'Claude', link: 'https://claude.ai', isGlobalApp: true, customIcon: 'https://logo.clearbit.com/claude.ai' }
 ];
 
 const defaultSpace = { _id: 'default', name: 'אישי', iconName: 'Home', color: 'var(--brand-color)', customTabs: ['יצירה'] };
 
-function SortableItem({ id, children, className, style, onContextMenu, href, onClick }) {
+function SortableItem({ id, children, className, style, onContextMenu, href, onClick, onMouseEnter, onMouseLeave }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
-  const combinedStyle = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.15 : 1, zIndex: isDragging ? 0 : 'auto', position: 'relative', cursor: isDragging ? 'grabbing' : 'pointer', ...style };
+  const combinedStyle = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.15 : (style?.opacity || 1), zIndex: isDragging ? 0 : 'auto', position: 'relative', cursor: isDragging ? 'grabbing' : 'pointer', ...style };
   const handleClick = (e) => { if (e.defaultPrevented) return; if (onClick) { onClick(e); } else if (href) { window.open(href, '_blank', 'noopener,noreferrer'); } };
-  return ( <div ref={setNodeRef} style={combinedStyle} {...attributes} {...listeners} className={className} onContextMenu={onContextMenu} onClick={handleClick}>{children}</div> );
+  return ( <div ref={setNodeRef} style={combinedStyle} {...attributes} {...listeners} className={className} onContextMenu={onContextMenu} onClick={handleClick} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>{children}</div> );
 }
 
 export default function ClientDashboard({ initialItems = [], initialSpaces = [], user = { name: 'אורח', role: 'user' } }) {
@@ -78,22 +88,24 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
   const [themeMode, setThemeMode] = useState('dark'); 
   const [themeTint, setThemeTint] = useState('gray'); 
   const [showThemeMenu, setShowThemeMenu] = useState(false);
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false); // הסטייט של החיפוש הנפתח
 
   const handleModeChange = (mode) => { setThemeMode(mode); localStorage.setItem('dash_theme_mode', mode); };
   const handleTintChange = (tint) => { setThemeTint(tint); localStorage.setItem('dash_theme_tint', tint); };
   const activeThemeKey = `${themeMode}-${themeTint}`;
   const activeThemeStyles = THEMES[activeThemeKey] || THEMES['dark-gray'];
   
-const [items, setItems] = useState(() => {
+  const [items, setItems] = useState(() => {
     const hasGlobals = initialItems.some(i => i.isGlobalApp);
     return hasGlobals ? initialItems : [...initialItems, ...defaultGlobalApps];
   });
-  const globalApps = items.filter(i => i.isGlobalApp).sort((a, b) => (a.order || 0) - (b.order || 0));  const [spaces, setSpaces] = useState(initialSpaces.length > 0 ? initialSpaces : [defaultSpace]);
+  
+  const globalApps = items.filter(i => i.isGlobalApp).sort((a, b) => (a.order || 0) - (b.order || 0));  
+  const [spaces, setSpaces] = useState(initialSpaces.length > 0 ? initialSpaces : [defaultSpace]);
   const [activeSpace, setActiveSpace] = useState(spaces[0]);
   
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [activeCustomTab, setActiveCustomTab] = useState(spaces[0]?.customTabs?.[0] || null);
   const [activeCategoryTab, setActiveCategoryTab] = useState('ראשי');
 
@@ -141,8 +153,10 @@ const [items, setItems] = useState(() => {
 
   const currentSpaceId = activeSpace?._id || 'default';
   const currentSpaceTabs = activeSpace?.customTabs || [];
-const [isEditAppModalOpen, setEditAppModalOpen] = useState(false);
+  
+  const [isEditAppModalOpen, setEditAppModalOpen] = useState(false);
   const [editAppData, setEditAppData] = useState({ _id: '', title: '', link: '' });
+
   useEffect(() => { 
     setIsMounted(true); 
     if (window.innerWidth <= 768) { setSidebarOpen(false); }
@@ -161,7 +175,6 @@ const [isEditAppModalOpen, setEditAppModalOpen] = useState(false);
         const found = spaces.find(s => s._id === savedSpaceId);
         if (found) targetSpace = found;
     }
-    
     
     setActiveSpace(targetSpace);
     
@@ -187,7 +200,13 @@ const [isEditAppModalOpen, setEditAppModalOpen] = useState(false);
   const renderSpaceIcon = (iconName, color, size = 16) => { const IconComponent = ICONS_MAP[iconName] || Folder; return <IconComponent size={size} color={color || 'var(--text-muted)'} />; };
   const getContextMenuPosition = (e, menuWidth = 220, menuHeight = 250) => { const x = e.clientX + menuWidth > window.innerWidth ? window.innerWidth - menuWidth - 10 : e.clientX; const y = e.clientY + menuHeight > window.innerHeight ? window.innerHeight - menuHeight - 10 : e.clientY; return { x, y }; };
   
-  const closeContextMenus = () => { setContextMenu({ visible: false, x: 0, y: 0, item: null }); setSpaceContextMenu({ visible: false, x: 0, y: 0, space: null }); setTabContextMenu({ visible: false, x: 0, y: 0, tabName: null }); setShowThemeMenu(false); };
+  const closeContextMenus = () => { 
+    setContextMenu({ visible: false, x: 0, y: 0, item: null }); 
+    setSpaceContextMenu({ visible: false, x: 0, y: 0, space: null }); 
+    setTabContextMenu({ visible: false, x: 0, y: 0, tabName: null }); 
+    setShowThemeMenu(false); 
+    setIsSearchExpanded(false); 
+  };
 
   const handleDragStart = (event) => { setActiveDragId(event.active.id); };
   const handleDragOver = (event) => { const { over } = event; setActiveOverId(over ? over.id : null); };
@@ -198,7 +217,6 @@ const [isEditAppModalOpen, setEditAppModalOpen] = useState(false);
     const { active, over } = event; 
     if (!over || active.id === over.id) return;
 
-    
     const activeSpaceObj = spaces.find(s => s._id === active.id);
     const overSpaceObj = spaces.find(s => s._id === over.id);
 
@@ -206,11 +224,8 @@ const [isEditAppModalOpen, setEditAppModalOpen] = useState(false);
       const oldIndex = spaces.findIndex(s => s._id === active.id);
       const newIndex = spaces.findIndex(s => s._id === over.id);
       if (oldIndex !== -1 && newIndex !== -1) {
-        // מעדכנים את הסדר בממשק באופן מיידי
         const reorderedSpaces = arrayMove(spaces, oldIndex, newIndex);
         setSpaces(reorderedSpaces);
-        
-        // שומרים את הסדר החדש בשרת
         const orderUpdates = reorderedSpaces.map((space, index) => ({ _id: space._id, order: index }));
         try {
           await Promise.all(orderUpdates.map(update => 
@@ -227,7 +242,6 @@ const [isEditAppModalOpen, setEditAppModalOpen] = useState(false);
       return;
     }
     
-    // גרירת נושאים (Tabs)
     if (currentSpaceTabs.includes(active.id) && currentSpaceTabs.includes(over.id)) { 
       const oldIndex = currentSpaceTabs.indexOf(active.id); 
       const newIndex = currentSpaceTabs.indexOf(over.id); 
@@ -244,7 +258,6 @@ const [isEditAppModalOpen, setEditAppModalOpen] = useState(false);
     const activeItem = items.find(i => i._id === active.id); 
     const overItem = items.find(i => i._id === over.id);
     
-    // גרירת פריט לתוך נושא (Tab)
     if (activeItem && currentSpaceTabs.includes(over.id)) { 
       if (activeItem.section === 'links') return; 
       const targetTab = over.id; 
@@ -259,16 +272,11 @@ const [isEditAppModalOpen, setEditAppModalOpen] = useState(false);
       return; 
     }
     
-    // גרירת פריטים לשינוי סדר
     if (activeItem && overItem) { 
       let filteredArray = []; 
-      
-      // אם אנחנו גוררים אפליקציה גלובלית
       if (activeItem.isGlobalApp && overItem.isGlobalApp) {
         filteredArray = items.filter(i => i.isGlobalApp).sort((a, b) => (a.order || 0) - (b.order || 0));
-      } 
-      // שאר הפריטים
-      else {
+      } else {
         if (activeCategoryTab === 'ראשי' || activeCategoryTab === 'מועדפים') { 
           if (favArray.find(i => i._id === active.id)) filteredArray = favArray; 
         } 
@@ -280,7 +288,6 @@ const [isEditAppModalOpen, setEditAppModalOpen] = useState(false);
         }
       }
 
-      // שמירת הסדר החדש
       if (filteredArray.length > 0) { 
         const oldIndex = filteredArray.findIndex(i => i._id === active.id); 
         const newIndex = filteredArray.findIndex(i => i._id === over.id); 
@@ -300,6 +307,7 @@ const [isEditAppModalOpen, setEditAppModalOpen] = useState(false);
       } 
     }
   };
+
   const handleAddCustomTab = async (e) => { 
     e.preventDefault(); if (!newTabName || currentSpaceTabs.includes(newTabName)) return; 
     const updatedTabs = [...currentSpaceTabs, newTabName]; const updatedSpace = { ...activeSpace, customTabs: updatedTabs }; 
@@ -329,24 +337,18 @@ const [isEditAppModalOpen, setEditAppModalOpen] = useState(false);
   
   const handleDeleteTabClick = () => { setTabToDelete(tabContextMenu.tabName); setDeleteTabModalOpen(true); closeContextMenus(); };
   
- const executeDeleteTab = async () => { 
+  const executeDeleteTab = async () => { 
     if (!tabToDelete) return; 
-    
-    // 1. מסירים את הנושא ממערך הנושאים של המרחב
     const updatedTabs = currentSpaceTabs.filter(t => t !== tabToDelete); 
     const updatedSpace = { ...activeSpace, customTabs: updatedTabs }; 
     setSpaces(spaces.map(s => s._id === activeSpace._id ? updatedSpace : s)); 
     setActiveSpace(updatedSpace); 
     
-    // 2. במקום למחוק, מעבירים את הפריטים לסל המחזור על ידי שינוי הסטטוס המקומי
     const itemsToRecycle = items.filter(i => i.spaceId === activeSpace._id && i.customTab === tabToDelete); 
     setItems(items.map(i => 
-      (i.spaceId === activeSpace._id && i.customTab === tabToDelete) 
-        ? { ...i, isDeleted: true } 
-        : i
+      (i.spaceId === activeSpace._id && i.customTab === tabToDelete) ? { ...i, isDeleted: true } : i
     )); 
     
-    // 3. מנווטים לנושא הבא (או ל-null אם אין)
     const nextTab = updatedTabs.length > 0 ? updatedTabs[0] : null;
     setActiveCustomTab(nextTab); 
     localStorage.setItem('dash_tab', nextTab || 'null'); 
@@ -354,27 +356,11 @@ const [isEditAppModalOpen, setEditAppModalOpen] = useState(false);
     setDeleteTabModalOpen(false); 
     setTabToDelete(null); 
     
-    // 4. עדכון השרת
     if (activeSpace._id !== 'default') { 
       try { 
-        // שומרים את מערך הנושאים החדש ללא הנושא שנמחק
-        await fetch(`/api/spaces/${activeSpace._id}`, { 
-          method: 'PUT', 
-          headers: { 'Content-Type': 'application/json' }, 
-          body: JSON.stringify({ customTabs: updatedTabs }) 
-        }); 
-        
-        // מעבירים את הפריטים לסל בשרת (שימוש ב-PUT במקום DELETE)
-        await Promise.all(itemsToRecycle.map(item => 
-          fetch(`/api/data/${item._id}`, { 
-            method: 'PUT', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ isDeleted: true }) 
-          })
-        )); 
-      } catch (error) {
-        console.error("Failed to move items to recycle bin:", error);
-      } 
+        await fetch(`/api/spaces/${activeSpace._id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customTabs: updatedTabs }) }); 
+        await Promise.all(itemsToRecycle.map(item => fetch(`/api/data/${item._id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ isDeleted: true }) }))); 
+      } catch (error) { console.error("Failed to move items to recycle bin:", error); } 
     } 
   };
 
@@ -392,22 +378,8 @@ const [isEditAppModalOpen, setEditAppModalOpen] = useState(false);
     try { const res = await fetch('/api/spaces', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newSpace.name, iconName: newSpace.iconName, color: newSpace.color, customTabs: [] }) }); if (res.ok) { const savedSpace = await res.json(); setSpaces(prev => prev.map(s => s._id === tempId ? { ...s, _id: savedSpace._id } : s)); setActiveSpace(savedSpace); localStorage.setItem('dash_spaceId', savedSpace._id); } } catch (error) {} 
   };
 
-
-  
-  const handleSpaceContextMenu = (e, space) => { 
-    e.preventDefault(); 
-    e.stopPropagation(); 
-    const { x, y } = getContextMenuPosition(e); 
-    closeContextMenus(); 
-    setSpaceContextMenu({ visible: true, x, y, space }); 
-  };
-  const handleTabContextMenu = (e, tab) => { 
-    e.preventDefault(); 
-    e.stopPropagation(); 
-    const { x, y } = getContextMenuPosition(e); 
-    closeContextMenus(); 
-    setTabContextMenu({ visible: true, x, y, tabName: tab }); 
-  };
+  const handleSpaceContextMenu = (e, space) => { e.preventDefault(); e.stopPropagation(); const { x, y } = getContextMenuPosition(e); closeContextMenus(); setSpaceContextMenu({ visible: true, x, y, space }); };
+  const handleTabContextMenu = (e, tab) => { e.preventDefault(); e.stopPropagation(); const { x, y } = getContextMenuPosition(e); closeContextMenus(); setTabContextMenu({ visible: true, x, y, tabName: tab }); };
   const openSpaceSettings = (space) => { setEditSpaceData({ name: space.name, iconName: space.iconName || 'Folder', color: space.color || 'var(--brand-color)' }); setEditingSpaceId(space._id); setSettingsModalOpen(true); closeContextMenus(); };
   const handleSaveSpaceSettings = async (e) => { e.preventDefault(); const updatedSpaces = spaces.map(s => s._id === editingSpaceId ? { ...s, name: editSpaceData.name, iconName: editSpaceData.iconName, color: editSpaceData.color } : s); setSpaces(updatedSpaces); if (activeSpace._id === editingSpaceId) setActiveSpace(updatedSpaces.find(s => s._id === editingSpaceId)); setSettingsModalOpen(false); if (editingSpaceId !== 'default') { fetch(`/api/spaces/${editingSpaceId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: editSpaceData.name, iconName: editSpaceData.iconName, color: editSpaceData.color }) }); } };
   const openRenameSpace = () => { if (!spaceContextMenu.space) return; setNewSpaceName(spaceContextMenu.space.name); setRenameSpaceModalOpen(true); closeContextMenus(); };
@@ -417,8 +389,6 @@ const [isEditAppModalOpen, setEditAppModalOpen] = useState(false);
   const executeDeleteSpace = async () => { 
     if (!spaceToDelete) return; 
     const targetSpaceId = spaceToDelete._id; 
-    
-    // קודם כל עושים את העדכון הוויזואלי (Optimistic Update)
     const updatedSpaces = spaces.filter(s => s._id !== targetSpaceId); 
     setSpaces(updatedSpaces); 
     if (activeSpace._id === targetSpaceId) { 
@@ -431,18 +401,12 @@ const [isEditAppModalOpen, setEditAppModalOpen] = useState(false);
     } 
     setDeleteSpaceModalOpen(false); 
     setSpaceToDelete(null); 
-    
-    // שליחה לשרת עם טיפול בשגיאות
     if (targetSpaceId !== 'default') { 
       try {
         const res = await fetch(`/api/spaces/${targetSpaceId}`, { method: 'DELETE' });
-        if (!res.ok) {
-          throw new Error('Server failed to delete space');
-        }
+        if (!res.ok) throw new Error('Server failed to delete space');
       } catch (error) {
-        console.error("Failed to delete space:", error);
-        // במערכת מקצועית, כאן היינו מחזירים את המרחב למסך או מציגים הודעת שגיאה
-        setToastMessage('שגיאה: לא הצלחנו למחוק את המרחב מהשרת');
+        setToastMessage({ text: 'שגיאה: לא הצלחנו למחוק את המרחב מהשרת', type: 'delete' });
         setTimeout(() => setToastMessage(null), 3000);
       }
     } 
@@ -454,39 +418,22 @@ const [isEditAppModalOpen, setEditAppModalOpen] = useState(false);
     setEditAppModalOpen(false);
     setToastMessage({ text: 'האפליקציה עודכנה בהצלחה!', type: 'success' });
     setTimeout(() => setToastMessage(null), 3000);
-    
-    // נשלח לשרת את העדכון רק אם זה פריט ששמור ב-DB (ולא פריט הדיפולט המקורי)
     if (!editAppData._id.startsWith('ga')) { 
-      try {
-        await fetch(`/api/data/${editAppData._id}`, { 
-          method: 'PUT', 
-          headers: { 'Content-Type': 'application/json' }, 
-          body: JSON.stringify({ 
-            title: editAppData.title, 
-            link: editAppData.link,
-            customIcon: editAppData.customIcon // <--- הנה התוספת החשובה!
-          }) 
-        });
-      } catch (error) {
-        console.error("Failed to update global app:", error);
-      }
+      try { await fetch(`/api/data/${editAppData._id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: editAppData.title, link: editAppData.link, customIcon: editAppData.customIcon }) }); } 
+      catch (error) { console.error("Failed to update global app:", error); }
     }
   };
 
   const handleIconUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // הגבלת גודל ל-500KB כדי לא להכביד על מסד הנתונים
       if (file.size > 500 * 1024) {
         setToastMessage({ text: 'הקובץ גדול מדי. אנא העלה אייקון עד 500KB', type: 'delete' });
         setTimeout(() => setToastMessage(null), 3000);
         return;
       }
       const reader = new FileReader();
-      reader.onloadend = () => {
-        // שומרים את התמונה המומרת (Base64) בתוך ה-State של העריכה
-        setEditAppData({ ...editAppData, customIcon: reader.result });
-      };
+      reader.onloadend = () => { setEditAppData({ ...editAppData, customIcon: reader.result }); };
       reader.readAsDataURL(file);
     }
   };
@@ -495,12 +442,11 @@ const [isEditAppModalOpen, setEditAppModalOpen] = useState(false);
   const handleContextMenu = (e, item) => { e.preventDefault(); const { x, y } = getContextMenuPosition(e); closeContextMenus(); setContextMenu({ visible: true, x, y, item: item }); };
   const handleSetItemColor = async (color) => { if (!contextMenu.item) return; const itemId = contextMenu.item._id; const updatedItems = items.map(i => i._id === itemId ? { ...i, itemColor: color } : i); setItems(updatedItems); closeContextMenus(); if (!contextMenu.item.isGlobal) { try { await fetch(`/api/data/${itemId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ itemColor: color }) }); } catch (error) {} } };
   
- const handleDeleteItem = async () => { 
+  const handleDeleteItem = async () => { 
     if (contextMenu.item) { 
       const itemId = contextMenu.item._id; 
       setItems(items.map(i => i._id === itemId ? { ...i, isDeleted: true } : i)); 
       closeContextMenus(); 
-      // חיווי אדום למחיקה
       setToastMessage({ text: 'הפריט הועבר לסל המחזור', type: 'delete' }); 
       setTimeout(() => setToastMessage(null), 3000); 
       if (!contextMenu.item.isGlobal) { fetch(`/api/data/${itemId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ isDeleted: true }) }); } 
@@ -509,7 +455,6 @@ const [isEditAppModalOpen, setEditAppModalOpen] = useState(false);
 
   const handleRestoreItem = async (itemId) => { 
     setItems(items.map(i => i._id === itemId ? { ...i, isDeleted: false } : i)); 
-    // חיווי ירוק לשחזור!
     setToastMessage({ text: 'הקובץ שוחזר בהצלחה!', type: 'success' });
     setTimeout(() => setToastMessage(null), 3000);
     try { await fetch(`/api/data/${itemId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ isDeleted: false }) }); } catch (error) {} 
@@ -517,7 +462,6 @@ const [isEditAppModalOpen, setEditAppModalOpen] = useState(false);
 
   const handlePermanentDelete = async (itemId) => { 
     setItems(items.filter(i => i._id !== itemId)); 
-    // חיווי אדום למחיקה סופית
     setToastMessage({ text: 'הקובץ נמחק לצמיתות', type: 'delete' });
     setTimeout(() => setToastMessage(null), 3000);
     try { await fetch(`/api/data/${itemId}`, { method: 'DELETE' }); } catch (error) {} 
@@ -528,10 +472,10 @@ const [isEditAppModalOpen, setEditAppModalOpen] = useState(false);
   const togglePinToMain = async (e, itemId) => { e.preventDefault(); e.stopPropagation(); const currentPinnedCount = items.filter(i => i.isFavorite && i.isPinnedToMain && (i.spaceId || 'default') === currentSpaceId).length; let newPinState = false; let shouldUpdate = false; const updatedItems = items.map(item => { if (item._id === itemId) { if (!item.isPinnedToMain && currentPinnedCount >= 10) { setMaxPinsModalOpen(true); return item; } newPinState = !item.isPinnedToMain; shouldUpdate = true; return { ...item, isPinnedToMain: newPinState }; } return item; }); setItems(updatedItems); if (shouldUpdate && !items.find(i=>i._id===itemId)?.isGlobal) { fetch(`/api/data/${itemId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ isPinnedToMain: newPinState }) }); } };
   const openMoveModal = () => { if (!contextMenu.item) return; setItemToMove(contextMenu.item); setMoveDestination({ spaceId: currentSpaceId, customTab: contextMenu.item.customTab || '' }); setMoveModalOpen(true); closeContextMenus(); };
   const handleMoveSubmit = async (e) => { e.preventDefault(); if (!itemToMove) return; const updatedItems = items.map(i => i._id === itemToMove._id ? { ...i, spaceId: moveDestination.spaceId, customTab: moveDestination.customTab || null } : i ); setItems(updatedItems); setMoveModalOpen(false); try { await fetch(`/api/data/${itemToMove._id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ spaceId: moveDestination.spaceId, customTab: moveDestination.customTab || null }) }); } catch (error) {} };
-const handleOpenMoveTabModal = () => { 
+  
+  const handleOpenMoveTabModal = () => { 
     if (!tabContextMenu.tabName) return;
     setTabToMove(tabContextMenu.tabName);
-    // בוחר אוטומטית את המרחב הראשון שהוא לא המרחב הנוכחי (אם יש כזה)
     const availableSpaces = spaces.filter(s => s._id !== activeSpace._id);
     setMoveTabDestinationSpaceId(availableSpaces.length > 0 ? availableSpaces[0]._id : '');
     setMoveTabModalOpen(true); 
@@ -541,25 +485,15 @@ const handleOpenMoveTabModal = () => {
   const executeMoveTab = async (e) => {
     e.preventDefault();
     if (!tabToMove || !moveTabDestinationSpaceId) return;
-
     const sourceSpaceId = activeSpace._id;
     const destSpaceId = moveTabDestinationSpaceId;
-
     const sourceSpace = spaces.find(s => s._id === sourceSpaceId);
     const destSpace = spaces.find(s => s._id === destSpaceId);
     if (!sourceSpace || !destSpace) return;
+    if (destSpace.customTabs?.includes(tabToMove)) { setToastMessage({ text: 'שגיאה: נושא בשם זה כבר קיים במרחב היעד', type: 'delete' }); setTimeout(() => setToastMessage(null), 3000); return; }
 
-    // מניעת כפילויות: מוודא שאין כבר נושא באותו שם במרחב היעד
-    if (destSpace.customTabs?.includes(tabToMove)) {
-      setToastMessage({ text: 'שגיאה: נושא בשם זה כבר קיים במרחב היעד', type: 'delete' });
-      setTimeout(() => setToastMessage(null), 3000);
-      return;
-    }
-
-    // 1. עדכון הנושאים במרחבים המקומיים
     const updatedSourceTabs = sourceSpace.customTabs.filter(t => t !== tabToMove);
     const updatedDestTabs = [...(destSpace.customTabs || []), tabToMove];
-
     const updatedSpaces = spaces.map(s => {
       if (s._id === sourceSpaceId) return { ...s, customTabs: updatedSourceTabs };
       if (s._id === destSpaceId) return { ...s, customTabs: updatedDestTabs };
@@ -569,16 +503,10 @@ const handleOpenMoveTabModal = () => {
     setSpaces(updatedSpaces);
     setActiveSpace(updatedSpaces.find(s => s._id === sourceSpaceId));
 
-    // 2. עדכון הפריטים (מסמכים/סרטונים) ששייכים לנושא הזה
     const itemsToMove = items.filter(i => i.spaceId === sourceSpaceId && i.customTab === tabToMove);
-    const updatedItems = items.map(i => 
-      (i.spaceId === sourceSpaceId && i.customTab === tabToMove)
-        ? { ...i, spaceId: destSpaceId }
-        : i
-    );
+    const updatedItems = items.map(i => (i.spaceId === sourceSpaceId && i.customTab === tabToMove) ? { ...i, spaceId: destSpaceId } : i );
     setItems(updatedItems);
 
-    // 3. ניווט לנושא הבא במרחב הנוכחי
     if (activeCustomTab === tabToMove) {
       const nextTab = updatedSourceTabs.length > 0 ? updatedSourceTabs[0] : null;
       setActiveCustomTab(nextTab);
@@ -590,21 +518,13 @@ const handleOpenMoveTabModal = () => {
     setToastMessage({ text: 'הנושא והתוכן שלו הועברו בהצלחה!', type: 'success' });
     setTimeout(() => setToastMessage(null), 3000);
 
-    // 4. שליחת העדכונים לשרת
     try {
-      if (sourceSpaceId !== 'default') {
-        fetch(`/api/spaces/${sourceSpaceId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customTabs: updatedSourceTabs }) });
-      }
-      if (destSpaceId !== 'default') {
-        fetch(`/api/spaces/${destSpaceId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customTabs: updatedDestTabs }) });
-      }
-      await Promise.all(itemsToMove.map(item => 
-        fetch(`/api/data/${item._id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ spaceId: destSpaceId }) })
-      ));
-    } catch (error) {
-      console.error("Failed to move tab to new space:", error);
-    }
+      if (sourceSpaceId !== 'default') { fetch(`/api/spaces/${sourceSpaceId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customTabs: updatedSourceTabs }) }); }
+      if (destSpaceId !== 'default') { fetch(`/api/spaces/${destSpaceId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customTabs: updatedDestTabs }) }); }
+      await Promise.all(itemsToMove.map(item => fetch(`/api/data/${item._id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ spaceId: destSpaceId }) }) ));
+    } catch (error) { console.error("Failed to move tab to new space:", error); }
   };
+
   const getFavicon = (url) => { try { return `https://www.google.com/s2/favicons?domain=${new URL(url).hostname}&sz=128`; } catch { return '/globe.svg'; } };
   const getThumbnail = (item) => { if (item.imageUrl) return item.imageUrl; const videoLink = item.link || item.url; if (videoLink) { const ytMatch = videoLink.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|shorts\/|watch\?v=|watch\?.+&v=))([^&?]+)/); if (ytMatch) return `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`; } return null; };
 
@@ -621,13 +541,13 @@ const handleOpenMoveTabModal = () => {
 
   const renderDragOverlay = () => {
     if (!activeDragId) return null;
-    const overlayStyle = { opacity: 0.65, transform: 'scale(1.05)', cursor: 'grabbing', pointerEvents: 'none' };
+    const overlayStyle = { opacity: 0.95, transform: 'scale(1.05)', cursor: 'grabbing', pointerEvents: 'none' };
     if (currentSpaceTabs.includes(activeDragId)) { return ( <div className={styles.customTab} style={{ ...overlayStyle, background: 'var(--bg-hover)', border: `2px solid var(--brand-color)`, color: 'var(--text-main)', boxShadow: '0 25px 50px -12px var(--shadow-color)', padding: '10px 20px', borderRadius: '30px', fontWeight: 'bold' }}><span>{activeDragId}</span></div> ); }
     const item = items.find(i => i._id === activeDragId);
     if (item) {
       if (item.section === 'links') { return ( <div className={styles.favCard} style={{ ...overlayStyle, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', background: 'var(--bg-card)', boxShadow: '0 25px 50px -12px var(--shadow-color)', padding: '10px', borderRadius: '12px', border: item.itemColor ? `1px solid ${item.itemColor}` : '1px solid transparent' }}><div className={styles.favIcon} style={{ background: 'transparent', padding: 0 }}><img src={getFavicon(item.link || item.url)} alt={item.title} style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover' }} /></div><span className={styles.favTitle} style={{ color: 'var(--text-secondary)' }}>{item.title}</span></div> ) } 
       else if (item.section === 'documents') { const { Icon: DocIcon, color: iconColor, bg: iconBg } = getDocIconProps(item.link || item.url); return ( <div className={styles.docRow} style={{ ...overlayStyle, background: 'var(--bg-card)', boxShadow: '0 25px 50px -12px var(--shadow-color)', padding: '15px', borderRadius: '8px', border: item.itemColor ? `1px solid ${item.itemColor}` : '1px solid transparent', display: 'flex', alignItems: 'center', width: '300px' }}><div className={styles.docInfo} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}><div className={styles.docIcon} style={{ background: iconBg, padding: '8px', borderRadius: '6px' }}><DocIcon size={20} color={iconColor}/></div><span className={styles.docTitle} style={{ color: 'var(--text-main)' }}>{item.title}</span></div></div> ) } 
-      else if (item.section === 'visuals') { const thumb = getThumbnail(item); return ( <div className={styles.squareCard} style={{ ...overlayStyle, background: 'var(--bg-card)', boxShadow: '0 25px 50px -12px var(--shadow-color)', borderRadius: '12px', overflow: 'hidden', width: '250px', border: item.itemColor ? `1px solid ${item.itemColor}` : 'none' }}><div className={styles.squareImageWrapper} style={{ position: 'relative', width: '100%', aspectRatio: '16/9' }}>{thumb ? <img src={thumb} alt={item.title} className={styles.cardImage} style={{ width: '100%', height: '100%', objectFit: 'cover' }}/> : <div style={{ background: 'var(--placeholder-bg)', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Play size={32} opacity={0.5} color="var(--text-muted)" /></div>}<div className={styles.playOverlay} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--play-overlay)' }}><Play size={40} fill="white" /></div></div><div className={styles.cardContent} style={{ padding: '12px' }}><h4 style={{ margin: 0, color: 'var(--text-main)' }}>{item.title}</h4></div></div> ) }
+      else if (item.section === 'visuals') { const thumb = getThumbnail(item); return ( <div className={styles.squareCard} style={{ ...overlayStyle, background: 'var(--bg-card)', boxShadow: '0 25px 50px -12px var(--shadow-color)', borderRadius: '12px', overflow: 'hidden', width: '250px', border: item.itemColor ? `1px solid ${item.itemColor}` : 'none' }}><div className={styles.squareImageWrapper} style={{ position: 'relative', width: '100%', aspectRatio: '16/9' }}>{thumb ? <img src={thumb} alt={item.title} className={styles.cardImage} style={{ width: '100%', height: '100%', objectFit: 'cover' }}/> : <div style={{ background: 'var(--placeholder-bg)', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Play size={32} opacity={0.9} color="var(--text-muted)" /></div>}<div className={styles.playOverlay} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--play-overlay)' }}><Play size={40} fill="white" /></div></div><div className={styles.cardContent} style={{ padding: '12px' }}><h4 style={{ margin: 0, color: 'var(--text-main)' }}>{item.title}</h4></div></div> ) }
     }
     return null;
   };
@@ -657,21 +577,36 @@ const handleOpenMoveTabModal = () => {
              <div className={styles.spacesList}>
                <SortableContext items={spaces.map(s => s._id)} strategy={verticalListSortingStrategy}>
                  {spaces.map(space => (
-                  <SortableItem 
+                   <SortableItem 
                      key={space._id} 
                      id={space._id} 
                      className={`${styles.spaceItem} ${activeSpace?._id === space._id ? styles.activeSpace : ''}`} 
-                     onClick={() => { /* ... אותו קוד onClick ... */ }} 
+                     onClick={() => { 
+                       setActiveSpace(space); 
+                       setActiveCategoryTab('ראשי'); 
+                       const firstTab = space.customTabs?.[0] || null; 
+                       setActiveCustomTab(firstTab); 
+                       localStorage.setItem('dash_spaceId', space._id); 
+                       localStorage.setItem('dash_category', 'ראשי'); 
+                       localStorage.setItem('dash_tab', firstTab || 'null'); 
+                       if (window.innerWidth <= 768) setSidebarOpen(false); 
+                     }} 
                      onContextMenu={(e) => handleSpaceContextMenu(e, space)} 
                      style={{ 
-                       justifyContent: isSidebarOpen ? 'flex-start' : 'center', padding: isSidebarOpen ? '10px' : '12px 0', width: isSidebarOpen ? 'calc(100% - 40px)' : '40px', margin: '0 auto 5px auto', borderRadius: '8px', display: 'flex', alignItems: 'center',
-                       color: activeSpace?._id === space._id ? 'var(--text-main)' : space.color, // צבע חי גם כשלא פעיל!
-                       opacity: activeSpace?._id === space._id ? 1 : 0.6, // משדר "מנוחה" ולא מוות
+                       justifyContent: isSidebarOpen ? 'flex-start' : 'center', 
+                       padding: isSidebarOpen ? '10px' : '12px 0', 
+                       width: isSidebarOpen ? 'calc(100% - 40px)' : '40px', 
+                       margin: '0 auto 5px auto', 
+                       borderRadius: '8px', 
+                       display: 'flex', 
+                       alignItems: 'center',
+                       color: activeSpace?._id === space._id ? 'var(--text-main)' : 'var(--text-secondary)', // צבע חי וברור יותר
+                       opacity: activeSpace?._id === space._id ? 1 : 1, // הרבה פחות שקוף!
                        transition: 'all 0.2s ease'
                      }} 
                      title={!isSidebarOpen ? space.name : ""}
                      onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
-                     onMouseLeave={(e) => { if (activeSpace?._id !== space._id) e.currentTarget.style.opacity = '0.6'; }}
+                     onMouseLeave={(e) => { if (activeSpace?._id !== space._id) e.currentTarget.style.opacity = '1'; }}
                    >
                      <span className={styles.spaceIcon} style={{ margin: isSidebarOpen ? '0' : '0 auto', display: 'flex' }}>
                        {renderSpaceIcon(space.iconName, space.color)}
@@ -684,22 +619,11 @@ const handleOpenMoveTabModal = () => {
           </nav>
           
           <div className={styles.sidebarFooter} style={{ padding: isSidebarOpen ? '20px 20px 40px 20px' : '20px 0 40px 0', borderTop: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-      <div onClick={() => setIsRecycleBinOpen(true)} 
-                 style={{ 
-                   display: 'flex', 
-                   alignItems: 'center', 
-                   justifyContent: isSidebarOpen ? 'flex-start' : 'center', 
-                   width: isSidebarOpen ? 'calc(100% - 20px)' : '100%', 
-                   margin: '0 auto', 
-                   cursor: 'pointer', 
-                   // כאן קורית ההדגשה העדינה: צבע חי יותר כשיש פריטים, ואפור כשהסל ריק
-                   color: deletedItems.length > 0 ? 'var(--text-main)' : 'var(--text-muted)', 
-                   transition: 'color 0.2s' 
-                 }} 
+            <div onClick={() => setIsRecycleBinOpen(true)} 
+                 style={{ display: 'flex', alignItems: 'center', justifyContent: isSidebarOpen ? 'flex-start' : 'center', width: isSidebarOpen ? 'calc(100% - 20px)' : '100%', margin: '0 auto', cursor: 'pointer', color: deletedItems.length > 0 ? 'var(--text-main)' : 'var(--text-muted)', transition: 'color 0.2s' }} 
                  title={!isSidebarOpen ? "סל מחזור" : ""} 
                  onMouseEnter={(e) => e.currentTarget.style.color = 'var(--brand-color)'} 
                  onMouseLeave={(e) => e.currentTarget.style.color = deletedItems.length > 0 ? 'var(--text-main)' : 'var(--text-muted)'}>
-              
               <Trash2 size={18} />
               {isSidebarOpen && <span style={{ marginRight: '10px', whiteSpace: 'nowrap' }}>סל מחזור</span>}
             </div>
@@ -716,29 +640,31 @@ const handleOpenMoveTabModal = () => {
               <button onClick={() => setSidebarOpen(true)} className={styles.mobileHamburger}><Menu size={24} /></button>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 {activeSpace && renderSpaceIcon(activeSpace.iconName, activeSpace.color, 24)}
-                  <h1 className={styles.spaceTitle} style={{ borderBottom: `3px solid ${activeSpace?.color || 'var(--brand-color)'}`, margin: 0, fontWeight: 900, letterSpacing: '0.5px' }}>{activeSpace?.name || 'בחר מרחב'}</h1>              </div>
+                <h1 className={styles.spaceTitle} style={{ borderBottom: `3px solid ${activeSpace?.color || 'var(--brand-color)'}`, margin: 0, fontWeight: 900, letterSpacing: '0.5px' }}>{activeSpace?.name || 'בחר מרחב'}</h1>
+              </div>
             </div>
             
             <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+              
               {/* --- שורת חיפוש נפתחת (Expandable) --- */}
-              <div style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                background: isSearchExpanded ? 'var(--bg-hover)' : 'transparent', 
-                borderRadius: '24px', 
-                border: isSearchExpanded ? '1px solid var(--border-color)' : '1px solid transparent', 
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                padding: isSearchExpanded ? '2px 12px 2px 2px' : '0' 
-              }}>
+              <div 
+                onClick={(e) => e.stopPropagation()} 
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  background: isSearchExpanded ? 'var(--bg-hover)' : 'transparent', 
+                  borderRadius: '24px', 
+                  border: isSearchExpanded ? '1px solid var(--border-color)' : '1px solid transparent', 
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  padding: isSearchExpanded ? '2px 12px 2px 2px' : '0' 
+                }}>
                 <button 
                   onClick={() => {
-                    if (isSearchExpanded && searchQuery) {
-                      setSearchQuery(''); // איפוס החיפוש אם סוגרים
-                    }
+                    if (isSearchExpanded && searchQuery) setSearchQuery('');
                     setIsSearchExpanded(!isSearchExpanded);
                   }} 
                   className={styles.settingsBtn} 
-                  style={{ padding: '8px', color: isSearchExpanded || searchQuery ? 'var(--brand-color)' : 'var(--text-muted)' }}
+                  style={{ padding: '8px', color: isSearchExpanded || searchQuery ? 'var(--brand-color)' : undefined }}                  
                   title="חיפוש"
                 >
                   <Search size={20} />
@@ -749,7 +675,7 @@ const handleOpenMoveTabModal = () => {
                   value={searchQuery} 
                   onChange={(e) => setSearchQuery(e.target.value)} 
                   style={{ 
-                    width: isSearchExpanded ? '220px' : '0px', /* רוחב של 3-4 מילים */
+                    width: isSearchExpanded ? '220px' : '0px', 
                     padding: isSearchExpanded ? '8px 10px 8px 0' : '0px', 
                     opacity: isSearchExpanded ? 1 : 0, 
                     background: 'transparent', 
@@ -763,6 +689,7 @@ const handleOpenMoveTabModal = () => {
                 />
               </div>
               {/* ------------------------------------- */}
+
               <div style={{ position: 'relative' }}>
                 <button onClick={(e) => { e.stopPropagation(); setShowThemeMenu(!showThemeMenu); }} className={styles.settingsBtn} title="עיצוב אישי">
                   <Palette size={20} />
@@ -795,19 +722,15 @@ const handleOpenMoveTabModal = () => {
                 {showInfoTooltip && (
                   <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: '10px', padding: '15px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '8px', boxShadow: '0 10px 15px -3px var(--shadow-color)', color: 'var(--text-secondary)', fontSize: '0.85rem', width: 'max-content', zIndex: 100, textAlign: 'right' }}>
                     <strong style={{ display: 'block', color: 'var(--text-main)', marginBottom: '8px', fontSize: '1.05rem' }}>אלדר ויז'ואל</strong>
-                    <div style={{ marginBottom: '4px' }}>גרסת מערכת: 3.2.8</div>
+                    <div style={{ marginBottom: '4px' }}>גרסת מערכת: 3.2.9</div>
                     <div style={{ color: 'var(--text-muted)' }}>&copy; 2026 כל הזכויות שמורות.</div>
                   </div>
                 )}
               </div> 
             </div>
           </header>
-   
-          <div className={styles.searchBar}>
-            <Search size={20} className={styles.searchIcon} />
-            <input type="text" placeholder="חפש מסמכים, סרטונים ותוכן..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-          </div>
 
+          {/* סרגל האפליקציות הגלובליות - ממורכז ומעל הכל! */}
           <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', padding: '20px 30px 10px 30px', borderBottom: '1px solid var(--border-color)', overflowX: 'auto', scrollbarWidth: 'none', background: 'var(--bg-main)' }} className="hideScrollbar">
             <SortableContext items={globalApps.map(a => a._id)} strategy={horizontalListSortingStrategy}>
               {globalApps.map(app => (
@@ -822,10 +745,7 @@ const handleOpenMoveTabModal = () => {
                   <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border-color)', boxShadow: '0 4px 10px -3px var(--shadow-color)', transition: 'transform 0.2s, borderColor 0.2s' }}
                        onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.borderColor = 'var(--brand-color)'; }}
                        onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'var(--border-color)'; }}>
-                    
-                    {/* כאן הקסם: מציג את האייקון המותאם אישית אם יש, אחרת את ברירת המחדל */}
                     <img draggable="false" src={app.customIcon || getFavicon(app.link)} alt={app.title} style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover' }} onError={(e) => { e.target.src = '/globe.svg'; }} />
-                    
                   </div>
                   <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textAlign: 'center', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: '500' }}>
                     {app.title}
@@ -835,8 +755,6 @@ const handleOpenMoveTabModal = () => {
             </SortableContext>
           </div>
 
-        
-            {/* ... שאר קוד ההידר שכבר קיים אצלך ... */}
           <div className={styles.customTabsWrapper} style={{ display: 'flex', alignItems: 'center', position: 'relative', marginBottom: '30px', marginTop: '10px' }}>
             <span style={{ fontSize: '0.95rem', color: 'var(--text-muted)', marginLeft: '15px', whiteSpace: 'nowrap' }}>נושאים:</span>
             
@@ -845,8 +763,26 @@ const handleOpenMoveTabModal = () => {
                   {currentSpaceTabs.map(tab => {
                     const isTargeted = isDraggingItem && activeOverId === tab;
                     return (
-                      <SortableItem key={tab} id={tab} onClick={() => { setActiveCustomTab(tab); localStorage.setItem('dash_tab', tab); }} onContextMenu={(e) => handleTabContextMenu(e, tab)} className={styles.customTab} 
-                        style={{ flexShrink: 0, scrollSnapAlign: 'center', ...(isTargeted ? { background: 'rgba(16, 185, 129, 0.15)', border: '2px dashed #10b981', transform: 'scale(1.05)', transition: 'all 0.2s', color: '#10b981' } : activeCustomTab === tab ? { background: 'var(--bg-hover)', border: `2px solid ${activeSpace?.color || 'var(--brand-color)'}`, color: 'var(--text-main)' } : { border: '2px solid transparent' }) }}>
+                     <SortableItem 
+                        key={tab} 
+                        id={tab} 
+                        onClick={() => { setActiveCustomTab(tab); localStorage.setItem('dash_tab', tab); }} 
+                        onContextMenu={(e) => handleTabContextMenu(e, tab)} 
+                        className={styles.customTab} 
+                        style={{ 
+                          flexShrink: 0, 
+                          scrollSnapAlign: 'center', 
+                          opacity: isTargeted || activeCustomTab === tab ? 1 : 1, // שקיפות כמעט מלאה
+                          fontWeight: activeCustomTab === tab ? 'bold' : '500', // משקל פונט טיפה יותר עבה ללא-פעילים
+                          transition: 'all 0.2s', 
+                          ...(isTargeted 
+                            ? { background: 'rgba(16, 185, 129, 0.15)', border: '2px dashed #10b981', transform: 'scale(1.05)', color: '#10b981' } 
+                            : activeCustomTab === tab 
+                              ? { background: 'var(--bg-hover)', border: `2px solid ${activeSpace?.color || 'var(--brand-color)'}`, color: 'var(--text-main)' } 
+                              // כאן השינוי: נותנים ללא-פעילים צבע טקסט ברור ורקע זכוכית עדין מאוד
+                              : { border: '2px solid transparent', color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.03)' } 
+                          ) 
+                        }}>
                         <span>{tab}</span>
                       </SortableItem>
                     )
@@ -861,7 +797,7 @@ const handleOpenMoveTabModal = () => {
             </div>
           </div>
 
-         <div className={styles.categoryTabsWrapper} style={{ borderBottom: '1px solid var(--border-color)', marginBottom: '30px', paddingBottom: '0' }}>
+          <div className={styles.categoryTabsWrapper} style={{ borderBottom: '1px solid var(--border-color)', marginBottom: '30px', paddingBottom: '0' }}>
             {[
               { id: 'ראשי', icon: LayoutGrid, label: 'ראשי' },
               { id: 'מועדפים', icon: Star, label: `מועדפים (${favoriteItems.length})` },
@@ -871,7 +807,6 @@ const handleOpenMoveTabModal = () => {
               const isActive = activeCategoryTab === tab.id;
               const TabIcon = tab.icon;
               const currentBrandColor = activeSpace?.color || 'var(--brand-color)';
-              
               return (
                 <button 
                   key={tab.id}
@@ -879,10 +814,10 @@ const handleOpenMoveTabModal = () => {
                   className={styles.categoryTab}
                   style={{
                     color: isActive ? currentBrandColor : 'var(--text-muted)',
-                    opacity: isActive ? 1 : 0.7,
+                    opacity: isActive ? 1 : 1,
                     borderBottom: isActive ? `2px solid ${currentBrandColor}` : '2px solid transparent',
                     paddingBottom: '12px',
-                    marginBottom: '-1px', // גורם לקו התחתון לדרוס את הקו של המסגרת
+                    marginBottom: '-1px', 
                     transition: 'all 0.3s ease',
                     fontWeight: isActive ? '600' : '400',
                     display: 'flex',
@@ -891,18 +826,8 @@ const handleOpenMoveTabModal = () => {
                     background: 'transparent',
                     cursor: 'pointer'
                   }}
-                  onMouseEnter={(e) => {
-                    if (!isActive) {
-                      e.currentTarget.style.color = currentBrandColor;
-                      e.currentTarget.style.opacity = '0.9';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isActive) {
-                      e.currentTarget.style.color = 'var(--text-muted)';
-                      e.currentTarget.style.opacity = '0.7';
-                    }
-                  }}
+                  onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.color = currentBrandColor; e.currentTarget.style.opacity = '1'; } }}
+                  onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.opacity = '1'; } }}
                 >
                   <TabIcon size={16} /> {tab.label}
                 </button>
@@ -961,7 +886,7 @@ const handleOpenMoveTabModal = () => {
                       })}
                     </SortableContext>
                   {documentItems.length === 0 && <p style={{color: 'var(--text-muted)', fontSize: '0.9rem', padding: '10px 0'}}>{!activeCustomTab ? 'צור נושא קודם כדי להוסיף מסמכים.' : 'אין מסמכים בנושא זה.'}</p>}
-                  <button onClick={() => { setNewItemSection('documents'); setAddItemModalOpen(true); }} className={styles.addListBtn} disabled={!activeCustomTab} style={{ opacity: activeCustomTab ? 1 : 0.4 }}><Plus size={18}/> הוסף מסמך חדש</button>
+                  <button onClick={() => { setNewItemSection('documents'); setAddItemModalOpen(true); }} className={styles.addListBtn} disabled={!activeCustomTab} style={{ opacity: activeCustomTab ? 1 : 1 }}><Plus size={18}/> הוסף מסמך חדש</button>
                 </div>
               </section>
             )}
@@ -977,7 +902,7 @@ const handleOpenMoveTabModal = () => {
                           <SortableItem key={vid._id} id={vid._id} href={vid.link || vid.url} className={styles.squareCard} onContextMenu={(e) => handleContextMenu(e, vid)}
                              style={{ borderColor: vid.itemColor || undefined, boxShadow: vid.itemColor ? `0 4px 15px ${vid.itemColor}25` : undefined }}>
                             <div className={styles.squareImageWrapper}>
-                              {thumb ? <img draggable="false" src={thumb} alt={vid.title} className={styles.cardImage} /> : <div className={styles.placeholderImg}><Play size={32} opacity={0.5} /></div>}
+                              {thumb ? <img draggable="false" src={thumb} alt={vid.title} className={styles.cardImage} /> : <div className={styles.placeholderImg}><Play size={32} opacity={0.8} /></div>}
                               <div className={styles.playOverlay}><Play size={40} fill="white" /></div>
                             </div>
                              <div className={styles.cardContent}><h4 className={styles.cardTitle} dir="auto" style={{ width: '100%', margin: 0 }}>{vid.title}</h4></div>
@@ -985,7 +910,7 @@ const handleOpenMoveTabModal = () => {
                         );
                       })}
                     </SortableContext>
-                  <button onClick={() => { setNewItemSection('visuals'); setAddItemModalOpen(true); }} className={`${styles.squareCard} ${styles.addSquareBtn}`} disabled={!activeCustomTab} style={{ opacity: activeCustomTab ? 1 : 0.4 }}><Plus size={32} color="var(--text-muted)" /><span>הוסף סרטון</span></button>
+                  <button onClick={() => { setNewItemSection('visuals'); setAddItemModalOpen(true); }} className={`${styles.squareCard} ${styles.addSquareBtn}`} disabled={!activeCustomTab} style={{ opacity: activeCustomTab ? 1 : 0.8 }}><Plus size={32} color="var(--text-muted)" /><span>הוסף סרטון</span></button>
                 </div>
               </section>
             )}
@@ -995,13 +920,11 @@ const handleOpenMoveTabModal = () => {
         {/* --- חלונות קופצים (Modals) וקליק ימני --- */}
         {contextMenu.visible && (
           <div className={styles.contextMenu} style={{ top: contextMenu.y, left: contextMenu.x }}>
-            {/* אם זו אפליקציה גלובלית מהסרגל העליון */}
             {contextMenu.item?.isGlobalApp ? (
               <button onClick={() => { setEditAppData(contextMenu.item); setEditAppModalOpen(true); closeContextMenus(); }} className={styles.contextMenuItem}>
                 <Edit size={16} /> ערוך אפליקציה
               </button>
             ) : (
-              /* אם זה פריט רגיל (מסמך/סרטון/מועדף רגיל) */
               <>
                 {contextMenu.item?.isFavorite && ( <button onClick={(e) => { togglePinToMain(e, contextMenu.item._id); closeContextMenus(); }} className={styles.contextMenuItem}><Pin size={16} /> {contextMenu.item.isPinnedToMain ? 'הסר מהמסך הראשי' : 'הצמד למסך הראשי'}</button> )}
                 <button onClick={openMoveModal} className={styles.contextMenuItem}><MoveRight size={16} /> העבר מיקום...</button>
@@ -1059,7 +982,6 @@ const handleOpenMoveTabModal = () => {
           </div> 
         )}
         {isDeleteSpaceModalOpen && ( <div className={styles.modalOverlay} onClick={() => setDeleteSpaceModalOpen(false)}><div className={styles.modalContent} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px', textAlign: 'center', border: '1px solid #ef4444' }}><button onClick={() => setDeleteSpaceModalOpen(false)} className={styles.closeModal}><X size={20}/></button><div style={{ display: 'flex', justifyContent: 'center', marginBottom: '15px' }}><Trash2 size={48} color="#ef4444" /></div><h2 style={{ marginBottom: '15px', color: 'var(--text-main)' }}>מחיקת מרחב</h2><p style={{ color: 'var(--text-secondary)', marginBottom: '25px', lineHeight: '1.6', fontSize: '0.95rem' }}>האם אתה בטוח שברצונך למחוק את המרחב <strong>"{spaceToDelete?.name}"</strong>?<br/><span style={{ color: '#ef4444', fontSize: '0.85rem' }}>פעולה זו תמחק את כל הנושאים, המסמכים והסרטונים שבו לצמיתות ולא ניתנת לביטול.</span></p><div style={{ display: 'flex', gap: '10px' }}><button onClick={() => setDeleteSpaceModalOpen(false)} className={styles.submitModalBtn} style={{ background: 'var(--bg-hover)', color: 'var(--text-main)', flex: 1 }}>ביטול</button><button onClick={executeDeleteSpace} className={styles.submitModalBtn} style={{ background: '#ef4444', color: 'white', flex: 1, border: 'none' }}>כן, מחק מרחב</button></div></div></div> )}
-
 
         {isMoveModalOpen && ( <div className={styles.modalOverlay} onClick={() => setMoveModalOpen(false)}><div className={styles.modalContent} onClick={(e) => e.stopPropagation()}><button onClick={() => setMoveModalOpen(false)} className={styles.closeModal}><X size={20}/></button><h2>העברת פריט: {itemToMove?.title}</h2><form onSubmit={handleMoveSubmit} className={styles.modalForm}><div style={{ marginBottom: '15px' }}><label style={{ display: 'block', color: 'var(--text-secondary)', marginBottom: '8px', fontSize: '0.9rem' }}>בחר מרחב יעד:</label><select value={moveDestination.spaceId} onChange={(e) => { const newSpaceId = e.target.value; const targetSpace = spaces.find(s => s._id === newSpaceId); setMoveDestination({ spaceId: newSpaceId, customTab: targetSpace?.customTabs?.[0] || '' }); }} style={{ width: '100%', padding: '10px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', borderRadius: '6px' }}>{spaces.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}</select></div>{itemToMove?.section !== 'links' && ( <div style={{ marginBottom: '20px' }}><label style={{ display: 'block', color: 'var(--text-secondary)', marginBottom: '8px', fontSize: '0.9rem' }}>בחר נושא יעד:</label><select value={moveDestination.customTab} onChange={(e) => setMoveDestination({ ...moveDestination, customTab: e.target.value })} style={{ width: '100%', padding: '10px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', borderRadius: '6px' }}>{spaces.find(s => s._id === moveDestination.spaceId)?.customTabs?.map(tab => ( <option key={tab} value={tab}>{tab}</option> ))}{(!spaces.find(s => s._id === moveDestination.spaceId)?.customTabs || spaces.find(s => s._id === moveDestination.spaceId)?.customTabs.length === 0) && ( <option value="" disabled>אין נושאים במרחב זה</option> )}</select></div>)}<button type="submit" className={styles.submitModalBtn} disabled={itemToMove?.section !== 'links' && !moveDestination.customTab}>העבר עכשיו</button></form></div></div> )}
         {isEditTabModalOpen && ( <div className={styles.modalOverlay} onClick={() => setEditTabModalOpen(false)}><div className={styles.modalContent} onClick={(e) => e.stopPropagation()}><button onClick={() => setEditTabModalOpen(false)} className={styles.closeModal}><X size={20}/></button><h2>שינוי שם נושא</h2><form onSubmit={handleSaveEditTab} className={styles.modalForm}><input type="text" value={editTabName} onChange={e => setEditTabName(e.target.value)} required autoFocus /><button type="submit" className={styles.submitModalBtn}>שמור שם חדש</button></form></div></div> )}
@@ -1135,33 +1057,26 @@ const handleOpenMoveTabModal = () => {
               <h2>עריכת כלי עבודה</h2>
               
               <form onSubmit={handleSaveGlobalApp} className={styles.modalForm}>
-                
-                {/* אזור העלאת האייקון */}
                 <div style={{ marginBottom: '5px', padding: '15px', background: 'var(--bg-hover)', borderRadius: '12px', border: '1px dashed var(--border-color)' }}>
                   <label style={{ display: 'block', color: 'var(--text-secondary)', marginBottom: '12px', fontSize: '0.9rem', textAlign: 'center' }}>אייקון (PNG / ICO / JPG)</label>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px' }}>
                     <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'var(--bg-main)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border-color)', boxShadow: '0 4px 10px var(--shadow-color)' }}>
                       <img src={editAppData.customIcon || getFavicon(editAppData.link)} alt="Preview" style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} onError={(e) => { e.target.src = '/globe.svg'; }} />
                     </div>
-                    
-                    {/* כפתור נסתר עם עיצוב יפה */}
                     <label style={{ cursor: 'pointer', fontSize: '0.85rem', color: 'var(--brand-color)', display: 'flex', alignItems: 'center', gap: '5px', background: 'var(--card-float-bg)', padding: '6px 12px', borderRadius: '20px', border: '1px solid var(--border-color)' }}>
                       <ImageIcon size={14} /> שנה אייקון...
                       <input type="file" accept=".png, .ico, .jpg, .jpeg, .svg" onChange={handleIconUpload} style={{ display: 'none' }} />
                     </label>
                   </div>
                 </div>
-
                 <div style={{ marginTop: '10px' }}>
                   <label style={{ display: 'block', color: 'var(--text-secondary)', marginBottom: '5px', fontSize: '0.85rem' }}>שם האפליקציה:</label>
                   <input type="text" placeholder="שם האפליקציה" value={editAppData.title} onChange={e => setEditAppData({...editAppData, title: e.target.value})} required autoFocus />
                 </div>
-                
                 <div style={{ marginTop: '5px' }}>
                   <label style={{ display: 'block', color: 'var(--text-secondary)', marginBottom: '5px', fontSize: '0.85rem' }}>קישור (URL):</label>
                   <input type="url" placeholder="קישור (URL)" value={editAppData.link} onChange={e => setEditAppData({...editAppData, link: e.target.value})} required style={{ direction: 'ltr', textAlign: 'left' }} />
                 </div>
-
                 <button type="submit" className={styles.submitModalBtn} style={{ marginTop: '20px' }}>שמור שינויים</button>
               </form>
             </div>
@@ -1173,14 +1088,7 @@ const handleOpenMoveTabModal = () => {
             border: `1px solid ${toastMessage.type === 'success' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`, 
             color: 'var(--text-main)', padding: '12px 24px', borderRadius: '30px', display: 'flex', alignItems: 'center', gap: '10px', 
             boxShadow: '0 10px 25px -5px var(--shadow-color)', zIndex: 9999, animation: 'floatUpWow 0.3s ease-out forwards' }}>
-            
-            {/* אם זה הצלחה מציג ריפרש ירוק, אם מחיקה מציג פח אדום */}
-            {toastMessage.type === 'success' ? (
-              <RotateCcw size={18} color="#10b981" />
-            ) : (
-              <Trash2 size={18} color="#ef4444" />
-            )}
-            
+            {toastMessage.type === 'success' ? ( <RotateCcw size={18} color="#10b981" /> ) : ( <Trash2 size={18} color="#ef4444" /> )}
             <span>{toastMessage.text}</span>
           </div>
         )}
