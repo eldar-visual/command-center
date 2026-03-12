@@ -239,7 +239,11 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
     const { active, over } = event; 
     if (!active || !over) return;
 
-    if (currentSpaceTabs.includes(over.id)) {
+    // התיקון: אנחנו בודקים האם מה שאתה גורר כרגע הוא טאב בעצמו
+    const isDraggingTab = currentSpaceTabs.includes(active.id);
+
+    // מפעילים את ה"שאיבה" רק אם הפריט הנגרר הוא *לא* טאב, והוא נחת על טאב!
+    if (!isDraggingTab && currentSpaceTabs.includes(over.id)) {
       const draggedItem = items.find(i => i._id === active.id);
       
       if (draggedItem && draggedItem.customTab !== over.id) {
@@ -259,6 +263,7 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
       }
       return; 
     }
+    
     if (!over || active.id === over.id) return;
 
 
@@ -531,7 +536,8 @@ const handleAddItem = async (e) => {
     }
     // ----------------------------------------
 
-    const currentPinnedCount = items.filter(i => i.isFavorite && i.isPinnedToMain && (i.spaceId || 'default') === currentSpaceId).length; 
+// התיקון: סופרים מועדפים מוצמדים רק מתוך הנושא הפעיל כרגע!
+    const currentPinnedCount = items.filter(i => i.isFavorite && i.isPinnedToMain && (i.spaceId || 'default') === currentSpaceId && (i.customTab || null) === activeCustomTab).length;
     const shouldPin = newItemSection === 'favorites' && currentPinnedCount < 10; 
     const tempId = Date.now().toString(); 
     
@@ -643,7 +649,47 @@ const handleSaveEdit = async (e) => {
       console.error("Error saving move:", error); 
     }
   };
-  const togglePinToMain = async (e, itemId) => { e.preventDefault(); e.stopPropagation(); const currentPinnedCount = items.filter(i => i.isFavorite && i.isPinnedToMain && (i.spaceId || 'default') === currentSpaceId).length; let newPinState = false; let shouldUpdate = false; const updatedItems = items.map(item => { if (item._id === itemId) { if (!item.isPinnedToMain && currentPinnedCount >= 10) { setMaxPinsModalOpen(true); return item; } newPinState = !item.isPinnedToMain; shouldUpdate = true; return { ...item, isPinnedToMain: newPinState }; } return item; }); setItems(updatedItems); if (shouldUpdate && !items.find(i=>i._id===itemId)?.isGlobal) { fetch(`/api/data/${itemId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ isPinnedToMain: newPinState }) }); } };
+
+  const togglePinToMain = async (e, itemId) => { 
+    e.preventDefault(); 
+    e.stopPropagation(); 
+    
+    // מזהים באיזה נושא הפריט הזה נמצא כדי לספור נכון
+    const targetItem = items.find(i => i._id === itemId);
+    const itemTab = targetItem ? (targetItem.customTab || null) : null;
+
+    // התיקון הקריטי: סופרים את המוצמדים באותו נושא ספציפי בלבד
+    const currentPinnedCount = items.filter(i => i.isFavorite && i.isPinnedToMain && (i.spaceId || 'default') === currentSpaceId && (i.customTab || null) === itemTab).length; 
+    
+    let newPinState = false; 
+    let shouldUpdate = false; 
+    
+    const updatedItems = items.map(item => { 
+      if (item._id === itemId) { 
+        if (!item.isPinnedToMain && currentPinnedCount >= 10) { 
+          setMaxPinsModalOpen(true); 
+          return item; 
+        } 
+        newPinState = !item.isPinnedToMain; 
+        shouldUpdate = true; 
+        return { ...item, isPinnedToMain: newPinState }; 
+      } 
+      return item; 
+    }); 
+    
+    setItems(updatedItems); 
+    
+    if (shouldUpdate && !targetItem?.isGlobal) { 
+      try {
+        await fetch(`/api/data/${itemId}`, { 
+          method: 'PUT', 
+          headers: { 'Content-Type': 'application/json' }, 
+          body: JSON.stringify({ isPinnedToMain: newPinState }) 
+        }); 
+      } catch(error) {}
+    } 
+  };
+
   const openMoveModal = () => { if (!contextMenu.item) return; setItemToMove(contextMenu.item); setMoveDestination({ spaceId: currentSpaceId, customTab: contextMenu.item.customTab || '' }); setMoveModalOpen(true); closeContextMenus(); };
   const handleMoveSubmit = async (e) => { e.preventDefault(); if (!itemToMove) return; const updatedItems = items.map(i => i._id === itemToMove._id ? { ...i, spaceId: moveDestination.spaceId, customTab: moveDestination.customTab || null } : i ); setItems(updatedItems); setMoveModalOpen(false); try { await fetch(`/api/data/${itemToMove._id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ spaceId: moveDestination.spaceId, customTab: moveDestination.customTab || null }) }); } catch (error) {} };
   
