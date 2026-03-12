@@ -67,8 +67,7 @@ const defaultGlobalApps = [
   { _id: 'g5', title: 'Google Tasks', link: 'https://tasks.google.com', isGlobalApp: true, customIcon: 'https://ssl.gstatic.com/images/branding/product/1x/tasks_32dp.png' },
   { _id: 'g6', title: 'Gemini', link: 'https://gemini.google.com', isGlobalApp: true, customIcon: 'https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304ff6292a690345.svg' },
   { _id: 'g7', title: 'ChatGPT', link: 'https://chatgpt.com', isGlobalApp: true, customIcon: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/ChatGPT_logo.svg/512px-ChatGPT_logo.svg.png' },
-  { _id: 'g8', title: 'Claude', link: 'https://claude.ai', isGlobalApp: true, customIcon: 'https://logo.clearbit.com/claude.ai' }
-];
+  { _id: 'g8', title: 'Claude', link: 'https://claude.ai', isGlobalApp: true, customIcon: 'https://github.com/anthropics.png' }];
 
 const defaultSpace = { _id: 'default', name: 'אישי', iconName: 'Home', color: 'var(--brand-color)', customTabs: ['יצירה'] };
 
@@ -848,7 +847,38 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
               {currentSpaceTabs.length > 3 && ( <button onClick={scrollTabsLeft} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', padding: '0 5px', cursor: 'pointer', zIndex: 2 }}><ChevronLeft size={18} /></button> )}
             </div>
           </div>
-
+{currentSpaceTabs.length === 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '15vh', flex: 1 }}>
+              <h3 style={{ color: 'var(--text-secondary)', fontSize: '1.25rem', marginBottom: '25px', fontWeight: '500' }}>כדי להתחיל, הוסף נושא</h3>
+              <button 
+                onClick={() => setAddTabModalOpen(true)}
+                style={{
+                  width: '64px', height: '64px', borderRadius: '50%',
+                  background: 'transparent',
+                  color: activeSpace?.color || 'var(--brand-color)', 
+                  border: '1px solid var(--border-color)', // קו מתאר רציף, דק ועדין מאוד
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer', 
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                }}
+                onMouseEnter={(e) => { 
+                  e.currentTarget.style.transform = 'scale(1.1) translateY(-4px)'; 
+                  e.currentTarget.style.background = 'var(--bg-hover)'; // רקע זכוכית עדין
+                  e.currentTarget.style.borderColor = activeSpace?.color || 'var(--brand-color)'; // המסגרת נדלקת בצבע המרחב
+                }}
+                onMouseLeave={(e) => { 
+                  e.currentTarget.style.transform = 'scale(1) translateY(0)'; 
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.borderColor = 'var(--border-color)'; // חוזר לקו העדין והניטרלי
+                }}
+                title="הוסף נושא חדש"
+              >
+                {/* אייקון דק ואלגנטי יותר מברירת המחדל */}
+                <Plus size={30} strokeWidth={1.5} /> 
+              </button>
+            </div>
+          ) : (
+            <>
           <div className={styles.categoryTabsWrapper} style={{ borderBottom: '1px solid var(--border-color)', marginBottom: '30px', paddingBottom: '0' }}>
             {[
               { id: 'ראשי', icon: LayoutGrid, label: 'ראשי' },
@@ -967,6 +997,8 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
               </section>
             )}
           </div>
+          </>
+          )}
         </main>
 
         {/* --- חלונות קופצים (Modals) וקליק ימני --- */}
