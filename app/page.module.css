@@ -105,13 +105,13 @@
 /* --- Favorites Grid --- */
 .favoritesGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 20px; }
 .favCard, .squareCard, .docRow {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) ;
 }
 
 .favCard:hover, .squareCard:hover, .docRow:hover {
-  transform: translateY(-4px) !important;
-  box-shadow: 0 15px 30px -5px var(--shadow-color) !important;
-  border-color: var(--brand-color) !important;
+  transform: translateY(-4px) ;
+  box-shadow: 0 15px 30px -5px var(--shadow-color) ;
+  border-color: var(--brand-color) ;
 }
 
 .favIcon { width: 48px; height: 48px; background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; transition: background-color 0.4s ease; }

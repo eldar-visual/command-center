@@ -11,7 +11,7 @@ import {
   Sun, Moon, Palette 
 } from 'lucide-react';
 
-import { DndContext, closestCenter, KeyboardSensor, MouseSensor, TouchSensor, useSensor, useSensors, DragOverlay } from '@dnd-kit/core';
+import { DndContext, closestCenter,pointerWithin, KeyboardSensor, MouseSensor, TouchSensor, useSensor, useSensors, DragOverlay } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy, horizontalListSortingStrategy, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
@@ -74,9 +74,25 @@ const defaultSpace = { _id: 'default', name: 'אישי', iconName: 'Home', color
 
 function SortableItem({ id, children, className, style, onContextMenu, href, onClick, onMouseEnter, onMouseLeave }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
-  const combinedStyle = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.15 : (style?.opacity || 1), zIndex: isDragging ? 0 : 'auto', position: 'relative', cursor: isDragging ? 'grabbing' : 'pointer', ...style };
+  
+  // התיקון הקריטי: אנחנו מכבים את ה-transition של ה-CSS כשהפריט נגרר
+  const combinedStyle = { 
+    transform: CSS.Transform.toString(transform), 
+    transition: isDragging ? 'none' : (transition || undefined), // <--- הפתרון כאן
+    opacity: isDragging ? 0.3 : (style?.opacity || 1), 
+    zIndex: isDragging ? 999 : 'auto', 
+    position: 'relative', 
+    cursor: isDragging ? 'grabbing' : 'pointer', 
+    ...style 
+  };
+  
   const handleClick = (e) => { if (e.defaultPrevented) return; if (onClick) { onClick(e); } else if (href) { window.open(href, '_blank', 'noopener,noreferrer'); } };
-  return ( <div ref={setNodeRef} style={combinedStyle} {...attributes} {...listeners} className={className} onContextMenu={onContextMenu} onClick={handleClick} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>{children}</div> );
+  
+  return ( 
+    <div ref={setNodeRef} style={combinedStyle} {...attributes} {...listeners} className={className} onContextMenu={onContextMenu} onClick={handleClick} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
+      {children}
+    </div> 
+  );
 }
 
 export default function ClientDashboard({ initialItems = [], initialSpaces = [], user = { name: 'אורח', role: 'user' } }) {
@@ -217,16 +233,22 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
     const { active, over } = event; 
     if (!over || active.id === over.id) return;
 
-    const activeSpaceObj = spaces.find(s => s._id === active.id);
+   const activeSpaceObj = spaces.find(s => s._id === active.id);
     const overSpaceObj = spaces.find(s => s._id === over.id);
 
     if (activeSpaceObj && overSpaceObj) {
       const oldIndex = spaces.findIndex(s => s._id === active.id);
       const newIndex = spaces.findIndex(s => s._id === over.id);
       if (oldIndex !== -1 && newIndex !== -1) {
+        // מעדכנים מקומית (UI)
         const reorderedSpaces = arrayMove(spaces, oldIndex, newIndex);
         setSpaces(reorderedSpaces);
-        const orderUpdates = reorderedSpaces.map((space, index) => ({ _id: space._id, order: index }));
+        
+        // מכינים את העדכון לשרת - מסננים את מרחב ברירת המחדל!
+        const orderUpdates = reorderedSpaces
+          .filter(space => space._id !== 'default')
+          .map((space, index) => ({ _id: space._id, order: index }));
+          
         try {
           await Promise.all(orderUpdates.map(update => 
             fetch(`/api/spaces/${update._id}`, {
@@ -241,7 +263,6 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
       }
       return;
     }
-    
     if (currentSpaceTabs.includes(active.id) && currentSpaceTabs.includes(over.id)) { 
       const oldIndex = currentSpaceTabs.indexOf(active.id); 
       const newIndex = currentSpaceTabs.indexOf(over.id); 
@@ -541,13 +562,45 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
 
   const renderDragOverlay = () => {
     if (!activeDragId) return null;
-    const overlayStyle = { opacity: 0.95, transform: 'scale(1.05)', cursor: 'grabbing', pointerEvents: 'none' };
-    if (currentSpaceTabs.includes(activeDragId)) { return ( <div className={styles.customTab} style={{ ...overlayStyle, background: 'var(--bg-hover)', border: `2px solid var(--brand-color)`, color: 'var(--text-main)', boxShadow: '0 25px 50px -12px var(--shadow-color)', padding: '10px 20px', borderRadius: '30px', fontWeight: 'bold' }}><span>{activeDragId}</span></div> ); }
+    
+    // הורדנו את ה-scale כדי שהמסמך יישאר בגודל טבעי ולא יקפוץ
+    const overlayStyle = { opacity: 0.85, cursor: 'grabbing', pointerEvents: 'none' };
+    
+    if (currentSpaceTabs.includes(activeDragId)) { 
+      return ( <div className={styles.customTab} style={{ ...overlayStyle, background: 'var(--bg-hover)', border: `2px solid var(--brand-color)`, color: 'var(--text-main)', boxShadow: '0 25px 50px -12px var(--shadow-color)', padding: '10px 20px', borderRadius: '30px', fontWeight: 'bold' }}><span>{activeDragId}</span></div> ); 
+    }
+    
     const item = items.find(i => i._id === activeDragId);
     if (item) {
-      if (item.section === 'links') { return ( <div className={styles.favCard} style={{ ...overlayStyle, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', background: 'var(--bg-card)', boxShadow: '0 25px 50px -12px var(--shadow-color)', padding: '10px', borderRadius: '12px', border: item.itemColor ? `1px solid ${item.itemColor}` : '1px solid transparent' }}><div className={styles.favIcon} style={{ background: 'transparent', padding: 0 }}><img src={getFavicon(item.link || item.url)} alt={item.title} style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover' }} /></div><span className={styles.favTitle} style={{ color: 'var(--text-secondary)' }}>{item.title}</span></div> ) } 
-      else if (item.section === 'documents') { const { Icon: DocIcon, color: iconColor, bg: iconBg } = getDocIconProps(item.link || item.url); return ( <div className={styles.docRow} style={{ ...overlayStyle, background: 'var(--bg-card)', boxShadow: '0 25px 50px -12px var(--shadow-color)', padding: '15px', borderRadius: '8px', border: item.itemColor ? `1px solid ${item.itemColor}` : '1px solid transparent', display: 'flex', alignItems: 'center', width: '300px' }}><div className={styles.docInfo} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}><div className={styles.docIcon} style={{ background: iconBg, padding: '8px', borderRadius: '6px' }}><DocIcon size={20} color={iconColor}/></div><span className={styles.docTitle} style={{ color: 'var(--text-main)' }}>{item.title}</span></div></div> ) } 
-      else if (item.section === 'visuals') { const thumb = getThumbnail(item); return ( <div className={styles.squareCard} style={{ ...overlayStyle, background: 'var(--bg-card)', boxShadow: '0 25px 50px -12px var(--shadow-color)', borderRadius: '12px', overflow: 'hidden', width: '250px', border: item.itemColor ? `1px solid ${item.itemColor}` : 'none' }}><div className={styles.squareImageWrapper} style={{ position: 'relative', width: '100%', aspectRatio: '16/9' }}>{thumb ? <img src={thumb} alt={item.title} className={styles.cardImage} style={{ width: '100%', height: '100%', objectFit: 'cover' }}/> : <div style={{ background: 'var(--placeholder-bg)', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Play size={32} opacity={0.9} color="var(--text-muted)" /></div>}<div className={styles.playOverlay} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--play-overlay)' }}><Play size={40} fill="white" /></div></div><div className={styles.cardContent} style={{ padding: '12px' }}><h4 style={{ margin: 0, color: 'var(--text-main)' }}>{item.title}</h4></div></div> ) }
+      if (item.section === 'links') { 
+        return ( <div className={styles.favCard} style={{ ...overlayStyle, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', background: 'var(--bg-card)', boxShadow: '0 25px 50px -12px var(--shadow-color)', padding: '10px', borderRadius: '12px', border: item.itemColor ? `1px solid ${item.itemColor}` : '1px solid transparent' }}><div className={styles.favIcon} style={{ background: 'transparent', padding: 0 }}><img src={getFavicon(item.link || item.url)} alt={item.title} style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover' }} /></div><span className={styles.favTitle} style={{ color: 'var(--text-secondary)' }}>{item.title}</span></div> ) 
+      } 
+      else if (item.section === 'documents') { 
+        const { Icon: DocIcon, color: iconColor, bg: iconBg } = getDocIconProps(item.link || item.url); 
+        return ( 
+          // הסרנו את הרוחב הקבוע (width: 300px) כדי למנוע את המתיחה
+          <div className={styles.docRow} style={{ ...overlayStyle, background: 'var(--bg-card)', boxShadow: '0 25px 50px -12px var(--shadow-color)', border: item.itemColor ? `1px solid ${item.itemColor}` : '1px solid transparent' }}>
+            <div className={styles.docInfo}>
+              <div className={styles.docIcon} style={{ background: iconBg }}><DocIcon size={20} color={iconColor}/></div>
+              <span className={styles.docTitle} style={{ color: 'var(--text-main)' }}>{item.title}</span>
+            </div>
+            <ExternalLink size={16} className={styles.openIcon} />
+          </div> 
+        ) 
+      } 
+      else if (item.section === 'visuals') { 
+        const thumb = getThumbnail(item); 
+        return ( 
+          // הסרנו גם כאן את הרוחב הקבוע למקרה שתגרור סרטונים
+          <div className={styles.squareCard} style={{ ...overlayStyle, background: 'var(--bg-card)', boxShadow: '0 25px 50px -12px var(--shadow-color)', border: item.itemColor ? `1px solid ${item.itemColor}` : '1px solid transparent' }}>
+            <div className={styles.squareImageWrapper}>
+              {thumb ? <img src={thumb} alt={item.title} className={styles.cardImage} /> : <div className={styles.placeholderImg}><Play size={32} opacity={0.5} color="var(--text-muted)" /></div>}
+              <div className={styles.playOverlay}><Play size={40} fill="white" /></div>
+            </div>
+            <div className={styles.cardContent}><h4 className={styles.cardTitle} dir="auto" style={{ margin: 0, color: 'var(--text-main)' }}>{item.title}</h4></div>
+          </div> 
+        ) 
+      }
     }
     return null;
   };
@@ -557,8 +610,7 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
   if (!isMounted) return null;
 
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleUnifiedDragEnd} onDragCancel={() => { setActiveDragId(null); setActiveOverId(null); }}>
-      
+<DndContext sensors={sensors} collisionDetection={pointerWithin} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleUnifiedDragEnd} onDragCancel={() => { setActiveDragId(null); setActiveOverId(null); }}>      
       <div className={styles.mainLayout} style={activeThemeStyles} onClick={closeContextMenus}>
         
         <div className={`${styles.mobileSidebarOverlay} ${isSidebarOpen ? styles.show : ''}`} onClick={() => setSidebarOpen(false)}></div>
@@ -1093,7 +1145,7 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
           </div>
         )}
 
-        <DragOverlay dropAnimation={{ duration: 250, easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)' }}>
+        <DragOverlay dropAnimation={{ duration: 150, easing: 'ease-out' }}>
           {renderDragOverlay()}
         </DragOverlay>
 

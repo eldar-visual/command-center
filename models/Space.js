@@ -5,6 +5,7 @@ const SpaceSchema = new mongoose.Schema({
   userId: { type: String }, 
   iconName: { type: String, default: 'Folder' }, 
   color: { type: String, default: '#94a3b8' },
+  order: { type: Number, default: 0 },
   customTabs: { type: [String], default: [] }
 }, { timestamps: true });
 
