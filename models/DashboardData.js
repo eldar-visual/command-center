@@ -10,7 +10,8 @@ const DashboardDataSchema = new mongoose.Schema({
   spaceId: { type: String },
   customTab: { type: String },
   userId: { type: String },
-  order: { type: Number, default: 0 }
+  order: { type: Number, default: 0 },
+  customIcon: { type: String }, 
 }, { timestamps: true });
 
 delete mongoose.models.DashboardData;

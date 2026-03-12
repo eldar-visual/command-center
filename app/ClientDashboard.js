@@ -59,6 +59,13 @@ const getDocIconProps = (url) => {
   return { Icon: FileText, color: "var(--brand-color)", bg: "var(--bg-hover)" }; 
 };
 
+const isVideoLink = (url) => {
+  return /(youtube\.com|youtu\.be|vimeo\.com|tiktok\.com|dailymotion\.com|loom\.com|\.(mp4|webm|mov|avi))(\/|\?|$)/i.test(url);
+};
+const isDocumentLink = (url) => {
+  return /(docs\.google\.com|drive\.google\.com|office\.com|sharepoint\.com|notion\.so|notion\.site|airtable\.com|monday\.com|figma\.com|canva\.com|dropbox\.com|\.(pdf|docx?|xlsx?|pptx?|txt|csv))(\/|\?|$)/i.test(url);
+};
+
 const defaultGlobalApps = [
   { _id: 'g1', title: 'Gmail', link: 'https://mail.google.com', isGlobalApp: true, customIcon: 'https://ssl.gstatic.com/images/branding/product/1x/gmail_32dp.png' },
   { _id: 'g2', title: 'Google Calendar', link: 'https://calendar.google.com', isGlobalApp: true, customIcon: 'https://ssl.gstatic.com/images/branding/product/1x/calendar_32dp.png' },
@@ -230,7 +237,30 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
     setActiveDragId(null); 
     setActiveOverId(null); 
     const { active, over } = event; 
+    if (!active || !over) return;
+
+    if (currentSpaceTabs.includes(over.id)) {
+      const draggedItem = items.find(i => i._id === active.id);
+      
+      if (draggedItem && draggedItem.customTab !== over.id) {
+        
+        setItems(items.map(i => 
+          i._id === active.id ? { ...i, customTab: over.id } : i
+        ));
+        
+        fetch(`/api/data/${active.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ customTab: over.id })
+        }).catch(err => console.error("Error moving item to tab:", err));
+        
+        setToastMessage({ text: `הפריט הועבר בהצלחה לנושא: ${over.id}`, type: 'success' });
+        setTimeout(() => setToastMessage(null), 3000);
+      }
+      return; 
+    }
     if (!over || active.id === over.id) return;
+
 
    const activeSpaceObj = spaces.find(s => s._id === active.id);
     const overSpaceObj = spaces.find(s => s._id === over.id);
@@ -458,7 +488,85 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
     }
   };
 
-  const handleAddItem = async (e) => { e.preventDefault(); if (!newItemData.title || !newItemData.link) return; const currentPinnedCount = items.filter(i => i.isFavorite && i.isPinnedToMain && (i.spaceId || 'default') === currentSpaceId).length; const shouldPin = newItemSection === 'favorites' && currentPinnedCount < 10; const tempId = Date.now().toString(); const newItem = { _id: tempId, title: newItemData.title, link: newItemData.link, section: newItemSection === 'favorites' ? 'links' : newItemSection, isFavorite: newItemSection === 'favorites', isPinnedToMain: shouldPin, spaceId: currentSpaceId, customTab: activeCustomTab === 'favorites' ? null : activeCustomTab, order: items.length }; setItems([...items, newItem]); setAddItemModalOpen(false); setNewItemData({ title: '', link: '' }); try { const { _id, ...itemToSave } = newItem; const res = await fetch('/api/data', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(itemToSave) }); if (res.ok) { const savedItem = await res.json(); setItems(prev => prev.map(i => i._id === tempId ? { ...i, _id: savedItem._id } : i)); } } catch (error) {} };
+  const handleRegularItemIconUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 500 * 1024) {
+        setToastMessage({ text: 'הקובץ גדול מדי. אנא העלה אייקון עד 500KB', type: 'delete' });
+        setTimeout(() => setToastMessage(null), 3000);
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => { setEditItemData({ ...editItemData, customIcon: reader.result }); };
+      reader.readAsDataURL(file);
+    }
+  };
+
+const handleAddItem = async (e) => { 
+    e.preventDefault(); 
+    if (!newItemData.title || !newItemData.link) return; 
+
+    const url = newItemData.link;
+
+    // --- ולידציה: חסימות חכמות לפי מדור ---
+    if (newItemSection === 'visuals') {
+      if (!isVideoLink(url)) {
+        setToastMessage({ text: 'שגיאה: במדור זה ניתן להוסיף רק קישורי וידאו (YouTube, Vimeo וכו\')', type: 'delete' });
+        setTimeout(() => setToastMessage(null), 4000);
+        return; // עוצר את השמירה!
+      }
+    }
+
+    if (newItemSection === 'documents') {
+      if (isVideoLink(url)) {
+        setToastMessage({ text: 'שגיאה: לא ניתן להוסיף סרטונים למדור המסמכים.', type: 'delete' });
+        setTimeout(() => setToastMessage(null), 4000);
+        return;
+      }
+      if (!isDocumentLink(url)) {
+        setToastMessage({ text: 'שגיאה: הקישור לא זוהה כמסמך (Google Docs, PDF, Notion וכו\').', type: 'delete' });
+        setTimeout(() => setToastMessage(null), 4000);
+        return;
+      }
+    }
+    // ----------------------------------------
+
+    const currentPinnedCount = items.filter(i => i.isFavorite && i.isPinnedToMain && (i.spaceId || 'default') === currentSpaceId).length; 
+    const shouldPin = newItemSection === 'favorites' && currentPinnedCount < 10; 
+    const tempId = Date.now().toString(); 
+    
+    const newItem = { 
+      _id: tempId, 
+      title: newItemData.title, 
+      link: newItemData.link, 
+      section: newItemSection === 'favorites' ? 'links' : newItemSection, 
+      isFavorite: newItemSection === 'favorites', 
+      isPinnedToMain: shouldPin, 
+      spaceId: currentSpaceId, 
+      customTab: activeCustomTab === 'favorites' ? null : activeCustomTab, 
+      order: items.length 
+    }; 
+    
+    setItems([...items, newItem]); 
+    setAddItemModalOpen(false); 
+    setNewItemData({ title: '', link: '' }); 
+    
+    try { 
+      const { _id, ...itemToSave } = newItem; 
+      const res = await fetch('/api/data', { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify(itemToSave) 
+      }); 
+      if (res.ok) { 
+        const savedItem = await res.json(); 
+        setItems(prev => prev.map(i => i._id === tempId ? { ...i, _id: savedItem._id } : i)); 
+      } 
+    } catch (error) {
+      console.error("Error saving item:", error);
+    } 
+  };
+  
   const handleContextMenu = (e, item) => { e.preventDefault(); const { x, y } = getContextMenuPosition(e); closeContextMenus(); setContextMenu({ visible: true, x, y, item: item }); };
   const handleSetItemColor = async (color) => { if (!contextMenu.item) return; const itemId = contextMenu.item._id; const updatedItems = items.map(i => i._id === itemId ? { ...i, itemColor: color } : i); setItems(updatedItems); closeContextMenus(); if (!contextMenu.item.isGlobal) { try { await fetch(`/api/data/${itemId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ itemColor: color }) }); } catch (error) {} } };
   
@@ -488,7 +596,53 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
   };
 
   const handleOpenEdit = () => { if (contextMenu.item) { setEditItemData(contextMenu.item); setEditModalOpen(true); closeContextMenus(); } };
-  const handleSaveEdit = async (e) => { e.preventDefault(); setItems(items.map(i => i._id === editItemData._id ? editItemData : i)); setEditModalOpen(false); if (!editItemData.isGlobal) fetch(`/api/data/${editItemData._id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: editItemData.title, link: editItemData.link }) }); };
+const handleSaveEdit = async (e) => { 
+    e.preventDefault(); 
+    setItems(items.map(i => i._id === editItemData._id ? editItemData : i)); 
+    setEditModalOpen(false); 
+    setToastMessage({ text: 'הפריט עודכן בהצלחה!', type: 'success' });
+    setTimeout(() => setToastMessage(null), 3000);
+    if (!editItemData.isGlobal) {
+      try {
+        await fetch(`/api/data/${editItemData._id}`, { 
+          method: 'PUT', headers: { 'Content-Type': 'application/json' }, 
+          // הוספנו כאן את שמירת ה-customIcon!
+          body: JSON.stringify({ title: editItemData.title, link: editItemData.link, customIcon: editItemData.customIcon }) 
+        });
+      } catch (error) {}
+    } 
+  };
+
+  const handleSaveMove = async (e) => {
+    e.preventDefault();
+    if (!itemToMove || !itemToMove._id) return;
+
+    // 1. מעדכנים את הממשק מיד (כדי שירגיש מהיר)
+    setItems(items.map(i => 
+      i._id === itemToMove._id 
+        ? { ...i, spaceId: itemToMove.spaceId || 'default', customTab: itemToMove.customTab || null } 
+        : i
+    ));
+
+    // 2. סוגרים את המודאל ומקפיצים הודעת הצלחה
+    setIsMoveModalOpen(false); // או setMoveModalOpen(false) - תלוי איך קראת לזה אצלך
+    setToastMessage({ text: 'הפריט הועבר בהצלחה!', type: 'success' });
+    setTimeout(() => setToastMessage(null), 3000);
+
+    // 3. שומרים בשרת מאחורי הקלעים
+    try {
+      await fetch(`/api/data/${itemToMove._id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          spaceId: itemToMove.spaceId || 'default', 
+          customTab: itemToMove.customTab || null 
+        })
+      });
+    } catch (error) { 
+      console.error("Error saving move:", error); 
+    }
+  };
   const togglePinToMain = async (e, itemId) => { e.preventDefault(); e.stopPropagation(); const currentPinnedCount = items.filter(i => i.isFavorite && i.isPinnedToMain && (i.spaceId || 'default') === currentSpaceId).length; let newPinState = false; let shouldUpdate = false; const updatedItems = items.map(item => { if (item._id === itemId) { if (!item.isPinnedToMain && currentPinnedCount >= 10) { setMaxPinsModalOpen(true); return item; } newPinState = !item.isPinnedToMain; shouldUpdate = true; return { ...item, isPinnedToMain: newPinState }; } return item; }); setItems(updatedItems); if (shouldUpdate && !items.find(i=>i._id===itemId)?.isGlobal) { fetch(`/api/data/${itemId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ isPinnedToMain: newPinState }) }); } };
   const openMoveModal = () => { if (!contextMenu.item) return; setItemToMove(contextMenu.item); setMoveDestination({ spaceId: currentSpaceId, customTab: contextMenu.item.customTab || '' }); setMoveModalOpen(true); closeContextMenus(); };
   const handleMoveSubmit = async (e) => { e.preventDefault(); if (!itemToMove) return; const updatedItems = items.map(i => i._id === itemToMove._id ? { ...i, spaceId: moveDestination.spaceId, customTab: moveDestination.customTab || null } : i ); setItems(updatedItems); setMoveModalOpen(false); try { await fetch(`/api/data/${itemToMove._id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ spaceId: moveDestination.spaceId, customTab: moveDestination.customTab || null }) }); } catch (error) {} };
@@ -925,18 +1079,49 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
                   {activeCategoryTab === 'ראשי' && favoriteItems.length > pinnedFavorites.length && ( <button onClick={() => setActiveCategoryTab('מועדפים')} className={styles.showAllBtn}>ניהול מועדפים <ChevronLeft size={16}/></button> )}
                 </div>
                 <div className={styles.favoritesGrid}>
-                    <SortableContext items={favArray.map(f=>f._id)} strategy={rectSortingStrategy}>
+                    <SortableContext items={favArray.map(f=>f._id)} 
+                    strategy={rectSortingStrategy}>
                       {favArray.map(item => (
-                        <SortableItem key={item._id} id={item._id} href={item.link || item.url} className={styles.favCard} onContextMenu={(e) => handleContextMenu(e, item)} 
-                           style={{ 
-                             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                             ...(activeCategoryTab === 'מועדפים' && item.isPinnedToMain ? { border: '3px solid var(--brand-color)' } : { border: item.itemColor ? `1px solid ${item.itemColor}` : '1px solid transparent' }),
+                        <SortableItem key={item._id} id={item._id} href={item.link || item.url} 
+                        className={styles.favCard} onContextMenu={(e) => handleContextMenu(e, item)}
+                        style={{ 
+                             display: 'flex', 
+                             flexDirection: 'column', 
+                             alignItems: 'center', 
+                             justifyContent: 'center', 
+                             gap: '8px',
+                             ...(activeCategoryTab === 'מועדפים' && item.isPinnedToMain ? { 
+                              border: '3px solid var(--brand-color)' } : { 
+                                border: item.itemColor ? `1px solid ${item.itemColor}` : '1px solid transparent' 
+                              }),
                              ...(item.itemColor ? { boxShadow: `0 4px 15px ${item.itemColor}25` } : {})
                            }}>
                           {activeCategoryTab === 'מועדפים' && (
-                             <button className={styles.pinBtn} onClick={(e) => togglePinToMain(e, item._id)} title={item.isPinnedToMain ? "הסר מהמסך הראשי" : "הצמד למסך הראשי"} style={{ position: 'absolute', top: '5px', left: '5px', background: item.isPinnedToMain ? 'var(--brand-color)' : 'var(--bg-hover)', border: 'none', borderRadius: '50%', padding: '4px', cursor: 'pointer', color: item.isPinnedToMain ? '#fff' : 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}><Pin size={12} fill={item.isPinnedToMain ? "#fff" : "none"} /></button>
+                             <button className={styles.pinBtn} 
+                             onClick={(e) => togglePinToMain(e, item._id)} 
+                             title={item.isPinnedToMain ? "הסר מהמסך הראשי" : "הצמד למסך הראשי"} 
+                             style={{ 
+                              position: 'absolute', 
+                              top: '5px', 
+                              left: '5px', 
+                              background: item.isPinnedToMain ? 'var(--brand-color)' : 'var(--bg-hover)', 
+                              border: 'none', 
+                              borderRadius: '50%', 
+                              padding: '4px', 
+                              cursor: 'pointer', 
+                              color: item.isPinnedToMain ? '#fff' : 'var(--text-muted)', 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              justifyContent: 'center', 
+                              zIndex: 10 }}>
+                                <Pin size={12} 
+                                fill={item.isPinnedToMain ? "#fff" : "none"} />
+                              </button>
                           )}
-                          <div className={styles.favIcon} style={{ padding: 0 }}><img draggable="false" src={getFavicon(item.link || item.url)} alt={item.title} style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover' }} onError={(e) => { e.target.src = '/globe.svg'; }} /></div>
+                          <div className={styles.favIcon} 
+                          style={{ padding: 0 }}>
+                            <img draggable="false" src={item.customIcon || getFavicon(item.link || item.url)} alt={item.title} style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover' }} onError={(e) => { e.target.src = '/globe.svg'; }} />
+                          </div>
                           <span className={styles.favTitle}>{item.title}</span>
                         </SortableItem>
                       ))}
@@ -1067,7 +1252,45 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
         )}
         {isDeleteSpaceModalOpen && ( <div className={styles.modalOverlay} onClick={() => setDeleteSpaceModalOpen(false)}><div className={styles.modalContent} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px', textAlign: 'center', border: '1px solid #ef4444' }}><button onClick={() => setDeleteSpaceModalOpen(false)} className={styles.closeModal}><X size={20}/></button><div style={{ display: 'flex', justifyContent: 'center', marginBottom: '15px' }}><Trash2 size={48} color="#ef4444" /></div><h2 style={{ marginBottom: '15px', color: 'var(--text-main)' }}>מחיקת מרחב</h2><p style={{ color: 'var(--text-secondary)', marginBottom: '25px', lineHeight: '1.6', fontSize: '0.95rem' }}>האם אתה בטוח שברצונך למחוק את המרחב <strong>"{spaceToDelete?.name}"</strong>?<br/><span style={{ color: '#ef4444', fontSize: '0.85rem' }}>פעולה זו תמחק את כל הנושאים, המסמכים והסרטונים שבו לצמיתות ולא ניתנת לביטול.</span></p><div style={{ display: 'flex', gap: '10px' }}><button onClick={() => setDeleteSpaceModalOpen(false)} className={styles.submitModalBtn} style={{ background: 'var(--bg-hover)', color: 'var(--text-main)', flex: 1 }}>ביטול</button><button onClick={executeDeleteSpace} className={styles.submitModalBtn} style={{ background: '#ef4444', color: 'white', flex: 1, border: 'none' }}>כן, מחק מרחב</button></div></div></div> )}
 
-        {isMoveModalOpen && ( <div className={styles.modalOverlay} onClick={() => setMoveModalOpen(false)}><div className={styles.modalContent} onClick={(e) => e.stopPropagation()}><button onClick={() => setMoveModalOpen(false)} className={styles.closeModal}><X size={20}/></button><h2>העברת פריט: {itemToMove?.title}</h2><form onSubmit={handleMoveSubmit} className={styles.modalForm}><div style={{ marginBottom: '15px' }}><label style={{ display: 'block', color: 'var(--text-secondary)', marginBottom: '8px', fontSize: '0.9rem' }}>בחר מרחב יעד:</label><select value={moveDestination.spaceId} onChange={(e) => { const newSpaceId = e.target.value; const targetSpace = spaces.find(s => s._id === newSpaceId); setMoveDestination({ spaceId: newSpaceId, customTab: targetSpace?.customTabs?.[0] || '' }); }} style={{ width: '100%', padding: '10px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', borderRadius: '6px' }}>{spaces.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}</select></div>{itemToMove?.section !== 'links' && ( <div style={{ marginBottom: '20px' }}><label style={{ display: 'block', color: 'var(--text-secondary)', marginBottom: '8px', fontSize: '0.9rem' }}>בחר נושא יעד:</label><select value={moveDestination.customTab} onChange={(e) => setMoveDestination({ ...moveDestination, customTab: e.target.value })} style={{ width: '100%', padding: '10px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-main)', borderRadius: '6px' }}>{spaces.find(s => s._id === moveDestination.spaceId)?.customTabs?.map(tab => ( <option key={tab} value={tab}>{tab}</option> ))}{(!spaces.find(s => s._id === moveDestination.spaceId)?.customTabs || spaces.find(s => s._id === moveDestination.spaceId)?.customTabs.length === 0) && ( <option value="" disabled>אין נושאים במרחב זה</option> )}</select></div>)}<button type="submit" className={styles.submitModalBtn} disabled={itemToMove?.section !== 'links' && !moveDestination.customTab}>העבר עכשיו</button></form></div></div> )}
+        {isMoveModalOpen && ( 
+          <div className={styles.modalOverlay} 
+          onClick={() => setMoveModalOpen(false)}>
+            <div className={styles.modalContent} 
+            onClick={(e) => e.stopPropagation()}>
+              <button onClick={() => setMoveModalOpen(false)} 
+              className={styles.closeModal}><X size={20}/>
+              </button>
+              <h2>העברת פריט: {itemToMove?.title}</h2>
+            <form onSubmit={handleSaveMove} className={styles.modalForm}>
+                
+                <label style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '8px', display: 'block' }}>בחר מרחב יעד:</label>
+                <select 
+                  style={{ width: '100%', padding: '12px', borderRadius: '8px', marginBottom: '15px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }}
+                  value={itemToMove?.spaceId || 'default'} 
+                  onChange={e => setItemToMove({...itemToMove, spaceId: e.target.value, customTab: null})}
+                >
+                  <option value="default">אישי (ברירת מחדל)</option>
+                  {spaces.filter(s => s._id !== 'default').map(space => (
+                    <option key={space._id} value={space._id}>{space.name}</option>
+                  ))}
+                </select>
+
+                <label style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '8px', display: 'block' }}>בחר נושא (אופציונלי):</label>
+                <select 
+                  style={{ width: '100%', padding: '12px', borderRadius: '8px', marginBottom: '25px', background: 'var(--bg-main)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }}
+                  value={itemToMove?.customTab || ''} 
+                  onChange={e => setItemToMove({...itemToMove, customTab: e.target.value || null})}
+                >
+                  <option value="">ללא נושא (כללי במרחב)</option>
+                  {/* שואבים את הנושאים של המרחב שנבחר */}
+                  {(spaces.find(s => s._id === (itemToMove?.spaceId || 'default'))?.customTabs || []).map(tab => (
+                    <option key={tab} value={tab}>{tab}</option>
+                  ))}
+                </select>
+
+                <button type="submit" className={styles.submitModalBtn}>העבר פריט</button>
+              </form>
+                                            </div></div> )}
         {isEditTabModalOpen && ( <div className={styles.modalOverlay} onClick={() => setEditTabModalOpen(false)}><div className={styles.modalContent} onClick={(e) => e.stopPropagation()}><button onClick={() => setEditTabModalOpen(false)} className={styles.closeModal}><X size={20}/></button><h2>שינוי שם נושא</h2><form onSubmit={handleSaveEditTab} className={styles.modalForm}><input type="text" value={editTabName} onChange={e => setEditTabName(e.target.value)} required autoFocus /><button type="submit" className={styles.submitModalBtn}>שמור שם חדש</button></form></div></div> )}
         {isMoveTabModalOpen && ( 
           <div className={styles.modalOverlay} onClick={() => setMoveTabModalOpen(false)}>
@@ -1102,7 +1325,51 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
         )}
         {isSettingsModalOpen && ( <div className={styles.modalOverlay} onClick={() => setSettingsModalOpen(false)}><div className={styles.modalContent} style={{ maxWidth: '450px' }} onClick={(e) => e.stopPropagation()}><button onClick={() => setSettingsModalOpen(false)} className={styles.closeModal}><X size={20}/></button><h2 style={{ marginBottom: '20px' }}>הגדרות ועיצוב מרחב</h2><form onSubmit={handleSaveSpaceSettings} className={styles.modalForm}><div style={{ marginBottom: '15px' }}><label style={{ display: 'block', color: 'var(--text-secondary)', marginBottom: '8px', fontSize: '0.9rem' }}>שם המרחב:</label><input type="text" value={editSpaceData.name} onChange={e => setEditSpaceData({...editSpaceData, name: e.target.value})} required /></div><div style={{ marginBottom: '15px' }}><label style={{ display: 'block', color: 'var(--text-secondary)', marginBottom: '8px', fontSize: '0.9rem' }}>בחר אייקון:</label><div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', background: 'var(--bg-main)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>{Object.keys(ICONS_MAP).map(iconKey => { const IconCmp = ICONS_MAP[iconKey]; const isSelected = editSpaceData.iconName === iconKey; return ( <button key={iconKey} type="button" onClick={() => setEditSpaceData({...editSpaceData, iconName: iconKey})} style={{ background: isSelected ? 'var(--bg-hover)' : 'transparent', border: isSelected ? `1px solid ${editSpaceData.color}` : '1px solid transparent', padding: '8px', borderRadius: '6px', cursor: 'pointer', transition: 'all 0.2s' }}><IconCmp size={20} color={isSelected ? editSpaceData.color : 'var(--text-muted)'} /></button> )})}</div></div><div style={{ marginBottom: '25px' }}><label style={{ display: 'block', color: 'var(--text-secondary)', marginBottom: '8px', fontSize: '0.9rem' }}>צבע ייחודי:</label><div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>{AVAILABLE_COLORS.map(color => ( <button key={color} type="button" onClick={() => setEditSpaceData({...editSpaceData, color: color})} style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: color, border: editSpaceData.color === color ? '3px solid var(--text-main)' : '3px solid transparent', cursor: 'pointer', outline: editSpaceData.color === color ? `1px solid ${color}` : 'none' }} /> ))}</div></div><button type="submit" className={styles.submitModalBtn} style={{ width: '100%' }}>שמור שינויים</button></form></div></div> )}
         {isRenameSpaceModalOpen && ( <div className={styles.modalOverlay} onClick={() => setRenameSpaceModalOpen(false)}><div className={styles.modalContent} onClick={(e) => e.stopPropagation()}><button onClick={() => setRenameSpaceModalOpen(false)} className={styles.closeModal}><X size={20}/></button><h2>שינוי שם מרחב</h2><form onSubmit={handleRenameSpaceSubmit} className={styles.modalForm}><input type="text" value={newSpaceName} onChange={e => setNewSpaceName(e.target.value)} required autoFocus /><button type="submit" className={styles.submitModalBtn}>שמור שם חדש</button></form></div></div> )}
-        {isEditModalOpen && ( <div className={styles.modalOverlay} onClick={() => setEditModalOpen(false)}><div className={styles.modalContent} onClick={(e) => e.stopPropagation()}><button onClick={() => setEditModalOpen(false)} className={styles.closeModal}><X size={20}/></button><h2>עריכת פריט</h2><form onSubmit={handleSaveEdit} className={styles.modalForm}><input type="text" placeholder="כותרת" value={editItemData.title} onChange={e => setEditItemData({...editItemData, title: e.target.value})} required autoFocus /><input type="url" placeholder="קישור (URL)" value={editItemData.link || editItemData.url || ''} onChange={e => setEditItemData({...editItemData, link: e.target.value})} required style={{ direction: 'ltr', textAlign: 'left' }} /><button type="submit" className={styles.submitModalBtn}>שמור שינויים</button></form></div></div> )}
+        {isEditModalOpen && ( 
+          <div className={styles.modalOverlay} onClick={() => setEditModalOpen(false)}>
+            <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+              <button onClick={() => setEditModalOpen(false)} className={styles.closeModal}><X size={20}/></button>
+              <h2>עריכת פריט</h2>
+              <form onSubmit={handleSaveEdit} className={styles.modalForm}>
+
+<select 
+                  style={{ 
+                    width: '100%', padding: '12px', borderRadius: '8px', marginBottom: '15px', 
+                    background: 'var(--bg-main)', color: 'var(--text-main)', 
+                    border: '1px solid var(--border-color)', outline: 'none',
+                    cursor: 'pointer'
+                  }}
+                  value={editItemData.customTab || ''} 
+                  onChange={e => setEditItemData({...editItemData, customTab: e.target.value || null})}
+                >
+                  <option value="">ללא נושא (מועדף כללי במרחב)</option>
+                  {currentSpaceTabs.map(tab => (
+                    <option key={tab} value={tab}>{tab}</option>
+                  ))}
+                </select>
+
+                {editItemData.section === 'links' && (
+                  <div style={{ marginBottom: '15px', padding: '15px', background: 'var(--bg-hover)', borderRadius: '12px', border: '1px dashed var(--border-color)' }}>
+                    <label style={{ display: 'block', color: 'var(--text-secondary)', marginBottom: '12px', fontSize: '0.9rem', textAlign: 'center' }}>אייקון (PNG / ICO / JPG)</label>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px' }}>
+                      <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'var(--bg-main)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border-color)', boxShadow: '0 4px 10px var(--shadow-color)' }}>
+                        <img src={editItemData.customIcon || getFavicon(editItemData.link || editItemData.url)} alt="Preview" style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} onError={(e) => { e.target.src = '/globe.svg'; }} />
+                      </div>
+                      <label style={{ cursor: 'pointer', fontSize: '0.85rem', color: 'var(--brand-color)', display: 'flex', alignItems: 'center', gap: '5px', background: 'var(--card-float-bg)', padding: '6px 12px', borderRadius: '20px', border: '1px solid var(--border-color)' }}>
+                        <ImageIcon size={14} /> שנה אייקון...
+                        <input type="file" accept=".png, .ico, .jpg, .jpeg, .svg" onChange={handleRegularItemIconUpload} style={{ display: 'none' }} />
+                      </label>
+                    </div>
+                  </div>
+                )}
+
+                <input type="text" placeholder="כותרת" value={editItemData.title} onChange={e => setEditItemData({...editItemData, title: e.target.value})} required autoFocus />
+                <input type="url" placeholder="קישור (URL)" value={editItemData.link || editItemData.url || ''} onChange={e => setEditItemData({...editItemData, link: e.target.value})} required style={{ direction: 'ltr', textAlign: 'left' }} />
+                <button type="submit" className={styles.submitModalBtn}>שמור שינויים</button>
+              </form>
+            </div>
+          </div> 
+        )}
         {isAddSpaceModalOpen && ( <div className={styles.modalOverlay} onClick={() => setAddSpaceModalOpen(false)}><div className={styles.modalContent} onClick={(e) => e.stopPropagation()}><button onClick={() => setAddSpaceModalOpen(false)} className={styles.closeModal}><X size={20}/></button><h2>הוספת מרחב חדש</h2><form onSubmit={handleAddSpace} className={styles.modalForm}><input type="text" placeholder="שם המרחב (לדוגמה: פרויקט אלפא)" value={newSpaceName} onChange={e => setNewSpaceName(e.target.value)} autoFocus /><button type="submit" className={styles.submitModalBtn}>צור מרחב</button></form></div></div> )}
         {isAddTabModalOpen && ( <div className={styles.modalOverlay} onClick={() => setAddTabModalOpen(false)}><div className={styles.modalContent} onClick={(e) => e.stopPropagation()}><button onClick={() => setAddTabModalOpen(false)} className={styles.closeModal}><X size={20}/></button><h2>הוספת נושא חדש למרחב ({activeSpace?.name})</h2><form onSubmit={handleAddCustomTab} className={styles.modalForm}><input type="text" placeholder="שם הנושא" value={newTabName} onChange={e => setNewTabName(e.target.value)} autoFocus /><button type="submit" className={styles.submitModalBtn}>הוסף נושא</button></form></div></div> )}
         {isAddItemModalOpen && ( <div className={styles.modalOverlay} onClick={() => setAddItemModalOpen(false)}><div className={styles.modalContent} onClick={(e) => e.stopPropagation()}><button onClick={() => setAddItemModalOpen(false)} className={styles.closeModal}><X size={20}/></button><h2>{newItemSection === 'documents' ? 'הוספת מסמך חדש' : newItemSection === 'favorites' ? 'הוספת מועדף חדש' : 'הוספת סרטון חדש'}</h2><form onSubmit={handleAddItem} className={styles.modalForm}><input type="text" placeholder="כותרת" value={newItemData.title} onChange={e => setNewItemData({...newItemData, title: e.target.value})} required autoFocus /><input type="url" placeholder="הדבק קישור כאן (URL)" value={newItemData.link} onChange={e => setNewItemData({...newItemData, link: e.target.value})} required style={{ direction: 'ltr', textAlign: 'left' }} /><button type="submit" className={styles.submitModalBtn}>הוסף למערכת</button></form></div></div> )}
