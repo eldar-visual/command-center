@@ -16,6 +16,9 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStr
 import { CSS } from '@dnd-kit/utilities';
 
 import styles from './page.module.css';
+import { useSession } from "next-auth/react";
+import Link from "next/link";
+
 
 const ICONS_MAP = { Folder, Home, Briefcase, Camera, Code, Book, Music, Video, ImageIcon, Mic, Heart, Star, Cloud, Shield, Zap, Target, Umbrella, Coffee, Globe, Key, MapPin };
 const AVAILABLE_COLORS = ['#ffffff', '#94a3b8', '#ef4444', '#f97316', '#f59e0b', '#10b981', '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899'];
@@ -94,6 +97,8 @@ function SortableItem({ id, children, className, style, onContextMenu, href, onC
   
   const handleClick = (e) => { if (e.defaultPrevented) return; if (onClick) { onClick(e); } else if (href) { window.open(href, '_blank', 'noopener,noreferrer'); } };
   
+const { data: session } = useSession();
+
   return ( 
     <div ref={setNodeRef} style={combinedStyle} {...attributes} {...listeners} className={className} onContextMenu={onContextMenu} onClick={handleClick} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
       {children}
@@ -105,7 +110,7 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
   const tabsScrollRef = useRef(null);
   const scrollTabsLeft = () => { if (tabsScrollRef.current) { tabsScrollRef.current.scrollBy({ left: -150, behavior: 'smooth' }); } };
   const router = useRouter();
-  
+  const { data: session } = useSession();
   const [isMounted, setIsMounted] = useState(false);
   const [themeMode, setThemeMode] = useState('dark'); 
   const [themeTint, setThemeTint] = useState('gray'); 
@@ -363,6 +368,8 @@ export default function ClientDashboard({ initialItems = [], initialSpaces = [],
     }
   };
 
+
+
   const handleAddCustomTab = async (e) => { 
     e.preventDefault(); if (!newTabName || currentSpaceTabs.includes(newTabName)) return; 
     const updatedTabs = [...currentSpaceTabs, newTabName]; const updatedSpace = { ...activeSpace, customTabs: updatedTabs }; 
@@ -534,9 +541,9 @@ const handleAddItem = async (e) => {
         return;
       }
     }
-    // ----------------------------------------
+    
 
-// התיקון: סופרים מועדפים מוצמדים רק מתוך הנושא הפעיל כרגע!
+
     const currentPinnedCount = items.filter(i => i.isFavorite && i.isPinnedToMain && (i.spaceId || 'default') === currentSpaceId && (i.customTab || null) === activeCustomTab).length;
     const shouldPin = newItemSection === 'favorites' && currentPinnedCount < 10; 
     const tempId = Date.now().toString(); 
@@ -879,13 +886,47 @@ const handleSaveEdit = async (e) => {
               {isSidebarOpen && <span style={{ marginRight: '10px', whiteSpace: 'nowrap' }}>סל מחזור</span>}
             </div>
 
+<div onClick={() => router.push('/settings')} 
+     style={{ display: 'flex', alignItems: 'center', justifyContent: isSidebarOpen ? 'flex-start' : 'center', width: isSidebarOpen ? 'calc(100% - 20px)' : '100%', margin: '0 auto', cursor: 'pointer', color: 'var(--text-muted)', transition: 'color 0.2s' }} 
+     title={!isSidebarOpen ? "הגדרות חשבון" : ""} 
+     onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-main)'} 
+     onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}>
+  <Settings size={18} />
+  {isSidebarOpen && <span style={{ marginRight: '10px', whiteSpace: 'nowrap' }}>הגדרות חשבון</span>}
+</div>
+
+{session?.user?.role === 'admin' && (
+  <Link href="/admin" className={styles.adminMenuItem}>
+     <span className={styles.icon}>⚙️</span>
+     <span>ניהול מערכת</span>
+  </Link>
+)}
+{session?.user?.role === 'admin' && (
+  <div 
+    className={styles.menuItem} 
+    onClick={() => router.push('/admin')}
+    style={{ 
+      borderRight: '4px solid #fbbf24', 
+      background: 'rgba(245, 158, 11, 0.05)',
+      cursor: 'pointer',
+      display: 'flex',
+      alignItems: 'center',
+      padding: '10px 20px',
+      gap: '10px'
+    }}
+  >
+    <Settings size={18} color="#fbbf24" />
+    <span style={{ color: '#fbbf24', fontWeight: 'bold' }}>ניהול מערכת</span>
+  </div>
+)}
+
             <div onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', justifyContent: isSidebarOpen ? 'flex-start' : 'center', width: isSidebarOpen ? 'calc(100% - 20px)' : '100%', margin: '0 auto', cursor: 'pointer', color: 'var(--text-muted)', transition: 'color 0.2s' }} title={!isSidebarOpen ? `התנתקות (${user.name})` : ""} onMouseEnter={(e) => e.currentTarget.style.color = '#ef4444'} onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}>
               <LogOut size={18} /> {isSidebarOpen && <span style={{ marginRight: '10px', whiteSpace: 'nowrap' }}>התנתקות ({user.name})</span>}
             </div>
           </div>
         </aside>
 
-        <main className={styles.content}>
+     <main className={styles.content}>
           <header className={styles.header}>
             <div style={{ display: 'flex', alignItems: 'center' }}>
               <button onClick={() => setSidebarOpen(true)} className={styles.mobileHamburger}><Menu size={24} /></button>
@@ -896,55 +937,18 @@ const handleSaveEdit = async (e) => {
             </div>
             
             <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-              
               {/* --- שורת חיפוש נפתחת (Expandable) --- */}
               <div 
                 onClick={(e) => e.stopPropagation()} 
-                style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  background: isSearchExpanded ? 'var(--bg-hover)' : 'transparent', 
-                  borderRadius: '24px', 
-                  border: isSearchExpanded ? '1px solid var(--border-color)' : '1px solid transparent', 
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  padding: isSearchExpanded ? '2px 12px 2px 2px' : '0' 
-                }}>
-                <button 
-                  onClick={() => {
-                    if (isSearchExpanded && searchQuery) setSearchQuery('');
-                    setIsSearchExpanded(!isSearchExpanded);
-                  }} 
-                  className={styles.settingsBtn} 
-                  style={{ padding: '8px', color: isSearchExpanded || searchQuery ? 'var(--brand-color)' : undefined }}                  
-                  title="חיפוש"
-                >
+                style={{ display: 'flex', alignItems: 'center', background: isSearchExpanded ? 'var(--bg-hover)' : 'transparent', borderRadius: '24px', border: isSearchExpanded ? '1px solid var(--border-color)' : '1px solid transparent', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', padding: isSearchExpanded ? '2px 12px 2px 2px' : '0' }}>
+                <button onClick={() => { if (isSearchExpanded && searchQuery) setSearchQuery(''); setIsSearchExpanded(!isSearchExpanded); }} className={styles.settingsBtn} style={{ padding: '8px', color: isSearchExpanded || searchQuery ? 'var(--brand-color)' : undefined }} title="חיפוש">
                   <Search size={20} />
                 </button>
-                <input 
-                  type="text" 
-                  placeholder="חפש תוכן..." 
-                  value={searchQuery} 
-                  onChange={(e) => setSearchQuery(e.target.value)} 
-                  style={{ 
-                    width: isSearchExpanded ? '220px' : '0px', 
-                    padding: isSearchExpanded ? '8px 10px 8px 0' : '0px', 
-                    opacity: isSearchExpanded ? 1 : 0, 
-                    background: 'transparent', 
-                    border: 'none', 
-                    color: 'var(--text-main)', 
-                    outline: 'none', 
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                    visibility: isSearchExpanded ? 'visible' : 'hidden',
-                    fontSize: '0.95rem'
-                  }}
-                />
+                <input type="text" placeholder="חפש תוכן..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} style={{ width: isSearchExpanded ? '220px' : '0px', padding: isSearchExpanded ? '8px 10px 8px 0' : '0px', opacity: isSearchExpanded ? 1 : 0, background: 'transparent', border: 'none', color: 'var(--text-main)', outline: 'none', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', visibility: isSearchExpanded ? 'visible' : 'hidden', fontSize: '0.95rem' }} />
               </div>
-              {/* ------------------------------------- */}
 
               <div style={{ position: 'relative' }}>
-                <button onClick={(e) => { e.stopPropagation(); setShowThemeMenu(!showThemeMenu); }} className={styles.settingsBtn} title="עיצוב אישי">
-                  <Palette size={20} />
-                </button>
+                <button onClick={(e) => { e.stopPropagation(); setShowThemeMenu(!showThemeMenu); }} className={styles.settingsBtn} title="עיצוב אישי"><Palette size={20} /></button>
                 {showThemeMenu && (
                   <div onClick={(e) => e.stopPropagation()} style={{ position: 'absolute', top: 'calc(100% + 10px)', left: '0', padding: '20px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '16px', boxShadow: '0 10px 35px var(--shadow-color)', zIndex: 100, width: '260px', cursor: 'default' }}>
                     <div style={{ marginBottom: '20px' }}>
@@ -981,7 +985,7 @@ const handleSaveEdit = async (e) => {
             </div>
           </header>
 
-          {/* סרגל האפליקציות הגלובליות - ממורכז ומעל הכל! */}
+          {/* סרגל האפליקציות הגלובליות - שחזרנו אותו בשלמותו! */}
           <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', padding: '20px 30px 10px 30px', borderBottom: '1px solid var(--border-color)', overflowX: 'auto', scrollbarWidth: 'none', background: 'var(--bg-main)' }} className="hideScrollbar">
             <SortableContext items={globalApps.map(a => a._id)} strategy={horizontalListSortingStrategy}>
               {globalApps.map(app => (
@@ -1006,229 +1010,149 @@ const handleSaveEdit = async (e) => {
             </SortableContext>
           </div>
 
-          <div className={styles.customTabsWrapper} style={{ display: 'flex', alignItems: 'center', position: 'relative', marginBottom: '30px', marginTop: '10px' }}>
-            <span style={{ fontSize: '0.95rem', color: 'var(--text-muted)', marginLeft: '15px', whiteSpace: 'nowrap' }}>נושאים:</span>
+       {/* שורת הנושאים - סידור Grid נוקשה וחסין שבירה */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr max-content', alignItems: 'center', gap: '15px', width: '100%', marginBottom: '30px', marginTop: '10px', padding: '0 15px', boxSizing: 'border-box' }}>
             
-           <div ref={tabsScrollRef} style={{ display: 'flex', flex: 1, overflowX: 'auto', gap: '10px', paddingBottom: '5px', scrollbarWidth: 'none', msOverflowStyle: 'none', scrollSnapType: 'x mandatory', WebkitMaskImage: 'linear-gradient(to right, transparent 0px, black 25px, black 100%)', maskImage: 'linear-gradient(to right, transparent 0px, black 25px, black 100%)' }} className="hideScrollbar">
-                <SortableContext items={currentSpaceTabs} strategy={horizontalListSortingStrategy}>
-                  {currentSpaceTabs.map(tab => {
-                    const isTargeted = isDraggingItem && activeOverId === tab;
-                    return (
-                     <SortableItem 
-                        key={tab} 
-                        id={tab} 
-                        onClick={() => { setActiveCustomTab(tab); localStorage.setItem('dash_tab', tab); }} 
-                        onContextMenu={(e) => handleTabContextMenu(e, tab)} 
-                        className={styles.customTab} 
-                        style={{ 
-                          flexShrink: 0, 
-                          scrollSnapAlign: 'center', 
-                          opacity: isTargeted || activeCustomTab === tab ? 1 : 1, // שקיפות כמעט מלאה
-                          fontWeight: activeCustomTab === tab ? 'bold' : '500', // משקל פונט טיפה יותר עבה ללא-פעילים
-                          transition: 'all 0.2s', 
-                          ...(isTargeted 
-                            ? { background: 'rgba(16, 185, 129, 0.15)', border: '2px dashed #10b981', transform: 'scale(1.05)', color: '#10b981' } 
-                            : activeCustomTab === tab 
-                              ? { background: 'var(--bg-hover)', border: `2px solid ${activeSpace?.color || 'var(--brand-color)'}`, color: 'var(--text-main)' } 
-                              // כאן השינוי: נותנים ללא-פעילים צבע טקסט ברור ורקע זכוכית עדין מאוד
-                              : { border: '2px solid transparent', color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.03)' } 
-                          ) 
-                        }}>
-                        <span>{tab}</span>
-                      </SortableItem>
-                    )
-                  })}
-                </SortableContext>
+            {/* עמודה 1: המילה "נושאים" */}
+            <span style={{ fontSize: '0.95rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+              נושאים:
+            </span>
+            
+            {/* עמודה 2: אזור הגלילה (תופס רק את השארית) */}
+            <div ref={tabsScrollRef} style={{ display: 'flex', minWidth: 0, overflowX: 'auto', gap: '10px', paddingBottom: '5px', scrollbarWidth: 'none', msOverflowStyle: 'none' }} className="hideScrollbar">
+              <SortableContext items={currentSpaceTabs} strategy={horizontalListSortingStrategy}>
+                {currentSpaceTabs.map(tab => {
+                  const isTargeted = isDraggingItem && activeOverId === tab;
+                  return (
+                    <SortableItem 
+                      key={tab} 
+                      id={tab} 
+                      onClick={() => { setActiveCustomTab(tab); localStorage.setItem('dash_tab', tab); }} 
+                      onContextMenu={(e) => handleTabContextMenu(e, tab)} 
+                      className={styles.customTab} 
+                      style={{ 
+                        flexShrink: 0, 
+                        scrollSnapAlign: 'center', 
+                        opacity: isTargeted || activeCustomTab === tab ? 1 : 1,
+                        fontWeight: activeCustomTab === tab ? 'bold' : '500',
+                        transition: 'all 0.2s', 
+                        ...(isTargeted 
+                          ? { background: 'rgba(16, 185, 129, 0.15)', border: '2px dashed #10b981', transform: 'scale(1.05)', color: '#10b981' } 
+                          : activeCustomTab === tab 
+                            ? { background: 'var(--bg-hover)', border: `2px solid ${activeSpace?.color || 'var(--brand-color)'}`, color: 'var(--text-main)' } 
+                            : { border: '2px solid transparent', color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.03)' } 
+                        ) 
+                      }}>
+                      <span>{tab}</span>
+                    </SortableItem>
+                  )
+                })}
+              </SortableContext>
               <div style={{ flex: '0 0 10px', width: '10px' }}></div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginRight: '15px' }}>
-              <button onClick={() => setAddTabModalOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', padding: '8px 14px', background: 'var(--bg-hover)', borderRadius: '20px', color: 'var(--text-secondary)', border: '1px solid var(--border-color)', cursor: 'pointer', whiteSpace: 'nowrap' }}><Plus size={14}/> נושא חדש</button>
-              {currentSpaceTabs.length > 3 && ( <button onClick={scrollTabsLeft} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', padding: '0 5px', cursor: 'pointer', zIndex: 2 }}><ChevronLeft size={18} /></button> )}
+            {/* עמודה 3: כפתור הוספת נושא */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <button onClick={() => setAddTabModalOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', padding: '8px 14px', background: 'var(--bg-hover)', borderRadius: '20px', color: 'var(--text-secondary)', border: '1px solid var(--border-color)', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                <Plus size={14}/> נושא חדש
+              </button>
+              {currentSpaceTabs.length > 3 && ( 
+                <button onClick={scrollTabsLeft} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', padding: '0 5px', cursor: 'pointer' }}>
+                  <ChevronLeft size={18} />
+                </button> 
+              )}
             </div>
           </div>
-{currentSpaceTabs.length === 0 ? (
+
+          {currentSpaceTabs.length === 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '15vh', flex: 1 }}>
               <h3 style={{ color: 'var(--text-secondary)', fontSize: '1.25rem', marginBottom: '25px', fontWeight: '500' }}>כדי להתחיל, הוסף נושא</h3>
               <button 
                 onClick={() => setAddTabModalOpen(true)}
-                style={{
-                  width: '64px', height: '64px', borderRadius: '50%',
-                  background: 'transparent',
-                  color: activeSpace?.color || 'var(--brand-color)', 
-                  border: '1px solid var(--border-color)', // קו מתאר רציף, דק ועדין מאוד
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer', 
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-                }}
-                onMouseEnter={(e) => { 
-                  e.currentTarget.style.transform = 'scale(1.1) translateY(-4px)'; 
-                  e.currentTarget.style.background = 'var(--bg-hover)'; // רקע זכוכית עדין
-                  e.currentTarget.style.borderColor = activeSpace?.color || 'var(--brand-color)'; // המסגרת נדלקת בצבע המרחב
-                }}
-                onMouseLeave={(e) => { 
-                  e.currentTarget.style.transform = 'scale(1) translateY(0)'; 
-                  e.currentTarget.style.background = 'transparent';
-                  e.currentTarget.style.borderColor = 'var(--border-color)'; // חוזר לקו העדין והניטרלי
-                }}
+                style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'transparent', color: activeSpace?.color || 'var(--brand-color)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
+                onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.1) translateY(-4px)'; e.currentTarget.style.background = 'var(--bg-hover)'; e.currentTarget.style.borderColor = activeSpace?.color || 'var(--brand-color)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1) translateY(0)'; e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'var(--border-color)'; }}
                 title="הוסף נושא חדש"
               >
-                {/* אייקון דק ואלגנטי יותר מברירת המחדל */}
                 <Plus size={30} strokeWidth={1.5} /> 
               </button>
             </div>
           ) : (
             <>
-          <div className={styles.categoryTabsWrapper} style={{ borderBottom: '1px solid var(--border-color)', marginBottom: '30px', paddingBottom: '0' }}>
-            {[
-              { id: 'ראשי', icon: LayoutGrid, label: 'ראשי' },
-              { id: 'מועדפים', icon: Star, label: `מועדפים (${favoriteItems.length})` },
-              { id: 'מסמכים', icon: FileText, label: `מסמכים (${documentItems.length})` },
-              { id: 'סרטונים', icon: Play, label: `סרטונים (${visualItems.length})` }
-            ].map(tab => {
-              const isActive = activeCategoryTab === tab.id;
-              const TabIcon = tab.icon;
-              const currentBrandColor = activeSpace?.color || 'var(--brand-color)';
-              return (
-                <button 
-                  key={tab.id}
-                  onClick={() => { setActiveCategoryTab(tab.id); localStorage.setItem('dash_category', tab.id); }} 
-                  className={styles.categoryTab}
-                  style={{
-                    color: isActive ? currentBrandColor : 'var(--text-muted)',
-                    opacity: isActive ? 1 : 1,
-                    borderBottom: isActive ? `2px solid ${currentBrandColor}` : '2px solid transparent',
-                    paddingBottom: '12px',
-                    marginBottom: '-1px', 
-                    transition: 'all 0.3s ease',
-                    fontWeight: isActive ? '600' : '400',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    background: 'transparent',
-                    cursor: 'pointer'
-                  }}
-                  onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.color = currentBrandColor; e.currentTarget.style.opacity = '1'; } }}
-                  onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.opacity = '1'; } }}
-                >
-                  <TabIcon size={16} /> {tab.label}
-                </button>
-              )
-            })}
-          </div>
+              <div className={styles.categoryTabsWrapper} style={{ borderBottom: '1px solid var(--border-color)', marginBottom: '30px', paddingBottom: '0' }}>
+                {[ { id: 'ראשי', icon: LayoutGrid, label: 'ראשי' }, { id: 'מועדפים', icon: Star, label: `מועדפים (${favoriteItems.length})` }, { id: 'מסמכים', icon: FileText, label: `מסמכים (${documentItems.length})` }, { id: 'סרטונים', icon: Play, label: `סרטונים (${visualItems.length})` } ].map(tab => {
+                  const isActive = activeCategoryTab === tab.id;
+                  const TabIcon = tab.icon;
+                  const currentBrandColor = activeSpace?.color || 'var(--brand-color)';
+                  return (
+                    <button key={tab.id} onClick={() => { setActiveCategoryTab(tab.id); localStorage.setItem('dash_category', tab.id); }} className={styles.categoryTab} style={{ color: isActive ? currentBrandColor : 'var(--text-muted)', opacity: isActive ? 1 : 1, borderBottom: isActive ? `2px solid ${currentBrandColor}` : '2px solid transparent', paddingBottom: '12px', marginBottom: '-1px', transition: 'all 0.3s ease', fontWeight: isActive ? '600' : '400', display: 'flex', alignItems: 'center', gap: '8px', background: 'transparent', cursor: 'pointer' }} onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.color = currentBrandColor; e.currentTarget.style.opacity = '1'; } }} onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.opacity = '1'; } }}>
+                      <TabIcon size={16} /> {tab.label}
+                    </button>
+                  )
+                })}
+              </div>
 
-          <div className={`${styles.scrollableContent} ${styles.animatedContent}`} key={`${activeSpace?._id}-${activeCustomTab}-${activeCategoryTab}-${searchQuery}`}>
-            {(activeCategoryTab === 'ראשי' || activeCategoryTab === 'מועדפים') && (
-              <section className={styles.section}>
-                <div className={styles.sectionHeader}>
-                  <h2 className={styles.sectionTitle}><Star size={20} color="var(--brand-color)" /> {activeCategoryTab === 'ראשי' ? 'המועדפים' : ' כל המועדפים'}</h2>
-                  {activeCategoryTab === 'ראשי' && favoriteItems.length > pinnedFavorites.length && ( <button onClick={() => setActiveCategoryTab('מועדפים')} className={styles.showAllBtn}>ניהול מועדפים <ChevronLeft size={16}/></button> )}
-                </div>
-                <div className={styles.favoritesGrid}>
-                    <SortableContext items={favArray.map(f=>f._id)} 
-                    strategy={rectSortingStrategy}>
-                      {favArray.map(item => (
-                        <SortableItem key={item._id} id={item._id} href={item.link || item.url} 
-                        className={styles.favCard} onContextMenu={(e) => handleContextMenu(e, item)}
-                        style={{ 
-                             display: 'flex', 
-                             flexDirection: 'column', 
-                             alignItems: 'center', 
-                             justifyContent: 'center', 
-                             gap: '8px',
-                             ...(activeCategoryTab === 'מועדפים' && item.isPinnedToMain ? { 
-                              border: '3px solid var(--brand-color)' } : { 
-                                border: item.itemColor ? `1px solid ${item.itemColor}` : '1px solid transparent' 
-                              }),
-                             ...(item.itemColor ? { boxShadow: `0 4px 15px ${item.itemColor}25` } : {})
-                           }}>
-                          {activeCategoryTab === 'מועדפים' && (
-                             <button className={styles.pinBtn} 
-                             onClick={(e) => togglePinToMain(e, item._id)} 
-                             title={item.isPinnedToMain ? "הסר מהמסך הראשי" : "הצמד למסך הראשי"} 
-                             style={{ 
-                              position: 'absolute', 
-                              top: '5px', 
-                              left: '5px', 
-                              background: item.isPinnedToMain ? 'var(--brand-color)' : 'var(--bg-hover)', 
-                              border: 'none', 
-                              borderRadius: '50%', 
-                              padding: '4px', 
-                              cursor: 'pointer', 
-                              color: item.isPinnedToMain ? '#fff' : 'var(--text-muted)', 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              justifyContent: 'center', 
-                              zIndex: 10 }}>
-                                <Pin size={12} 
-                                fill={item.isPinnedToMain ? "#fff" : "none"} />
-                              </button>
-                          )}
-                          <div className={styles.favIcon} 
-                          style={{ padding: 0 }}>
-                            <img draggable="false" src={item.customIcon || getFavicon(item.link || item.url)} alt={item.title} style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover' }} onError={(e) => { e.target.src = '/globe.svg'; }} />
-                          </div>
-                          <span className={styles.favTitle}>{item.title}</span>
-                        </SortableItem>
-                      ))}
-                    </SortableContext>
-                  {(activeCategoryTab === 'ראשי' || activeCategoryTab === 'מועדפים') && (
-                    <button onClick={() => { setNewItemSection('favorites'); setAddItemModalOpen(true); }} className={styles.addGridBtn} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px' }}><Plus size={24}/> <span>הוסף מועדף</span></button>
-                  )}  
-                </div>
-              </section>
-            )}
-
-            {(activeCategoryTab === 'ראשי' || activeCategoryTab === 'מסמכים') && (
-              <section className={styles.section}>
-                <div className={styles.sectionHeader}><h2 className={styles.sectionTitle}><FileText size={20} color="var(--brand-color)" /> מסמכים</h2></div>              
-                <div className={styles.documentsList}>
-                    <SortableContext items={documentItems.map(d=>d._id)} strategy={verticalListSortingStrategy}>
-                      {documentItems.map(doc => {
-                        const { Icon: DocIcon, color: iconColor, bg: iconBg } = getDocIconProps(doc.link || doc.url);
-                        return (
-                          <SortableItem key={doc._id} id={doc._id} href={doc.link || doc.url} className={styles.docRow} onContextMenu={(e) => handleContextMenu(e, doc)}
-                             style={{ borderColor: doc.itemColor || undefined, boxShadow: doc.itemColor ? `0 4px 15px ${doc.itemColor}25` : undefined }}>
-                            <div className={styles.docInfo}>
-                              <div className={styles.docIcon} style={{ background: iconBg }}><DocIcon size={20} color={iconColor}/></div>
-                              <span className={styles.docTitle}>{doc.title}</span>
-                            </div>
-                            <ExternalLink size={16} className={styles.openIcon} />
+              <div className={`${styles.scrollableContent} ${styles.animatedContent}`} key={`${activeSpace?._id}-${activeCustomTab}-${activeCategoryTab}-${searchQuery}`}>
+                {(activeCategoryTab === 'ראשי' || activeCategoryTab === 'מועדפים') && (
+                  <section className={styles.section}>
+                    <div className={styles.sectionHeader}><h2 className={styles.sectionTitle}><Star size={20} color="var(--brand-color)" /> {activeCategoryTab === 'ראשי' ? 'המועדפים' : ' כל המועדפים'}</h2>{activeCategoryTab === 'ראשי' && favoriteItems.length > pinnedFavorites.length && ( <button onClick={() => setActiveCategoryTab('מועדפים')} className={styles.showAllBtn}>ניהול מועדפים <ChevronLeft size={16}/></button> )}</div>
+                    <div className={styles.favoritesGrid}>
+                      <SortableContext items={favArray.map(f=>f._id)} strategy={rectSortingStrategy}>
+                        {favArray.map(item => (
+                          <SortableItem key={item._id} id={item._id} href={item.link || item.url} className={styles.favCard} onContextMenu={(e) => handleContextMenu(e, item)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', ...(activeCategoryTab === 'מועדפים' && item.isPinnedToMain ? { border: '3px solid var(--brand-color)' } : { border: item.itemColor ? `1px solid ${item.itemColor}` : '1px solid transparent' }), ...(item.itemColor ? { boxShadow: `0 4px 15px ${item.itemColor}25` } : {}) }}>
+                            {activeCategoryTab === 'מועדפים' && ( <button className={styles.pinBtn} onClick={(e) => togglePinToMain(e, item._id)} title={item.isPinnedToMain ? "הסר מהמסך הראשי" : "הצמד למסך הראשי"} style={{ position: 'absolute', top: '5px', left: '5px', background: item.isPinnedToMain ? 'var(--brand-color)' : 'var(--bg-hover)', border: 'none', borderRadius: '50%', padding: '4px', cursor: 'pointer', color: item.isPinnedToMain ? '#fff' : 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}><Pin size={12} fill={item.isPinnedToMain ? "#fff" : "none"} /></button> )}
+                            <div className={styles.favIcon} style={{ padding: 0 }}><img draggable="false" src={item.customIcon || getFavicon(item.link || item.url)} alt={item.title} style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover' }} onError={(e) => { e.target.src = '/globe.svg'; }} /></div>
+                            <span className={styles.favTitle}>{item.title}</span>
                           </SortableItem>
-                        );
-                      })}
-                    </SortableContext>
-                  {documentItems.length === 0 && <p style={{color: 'var(--text-muted)', fontSize: '0.9rem', padding: '10px 0'}}>{!activeCustomTab ? 'צור נושא קודם כדי להוסיף מסמכים.' : 'אין מסמכים בנושא זה.'}</p>}
-                  <button onClick={() => { setNewItemSection('documents'); setAddItemModalOpen(true); }} className={styles.addListBtn} disabled={!activeCustomTab} style={{ opacity: activeCustomTab ? 1 : 1 }}><Plus size={18}/> הוסף מסמך חדש</button>
-                </div>
-              </section>
-            )}
+                        ))}
+                      </SortableContext>
+                      {(activeCategoryTab === 'ראשי' || activeCategoryTab === 'מועדפים') && ( <button onClick={() => { setNewItemSection('favorites'); setAddItemModalOpen(true); }} className={styles.addGridBtn} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px' }}><Plus size={24}/> <span>הוסף מועדף</span></button> )}  
+                    </div>
+                  </section>
+                )}
 
-            {(activeCategoryTab === 'ראשי' || activeCategoryTab === 'סרטונים') && (
-              <section className={styles.section}>
-                <div className={styles.sectionHeader}><h2 className={styles.sectionTitle}><Play size={20} color="var(--brand-color)" /> סרטונים</h2></div>              
-                <div className={styles.visualsGrid}>
-                    <SortableContext items={visualItems.map(v=>v._id)} strategy={rectSortingStrategy}>
-                      {visualItems.map(vid => {
-                        const thumb = getThumbnail(vid);
-                        return (
-                          <SortableItem key={vid._id} id={vid._id} href={vid.link || vid.url} className={styles.squareCard} onContextMenu={(e) => handleContextMenu(e, vid)}
-                             style={{ borderColor: vid.itemColor || undefined, boxShadow: vid.itemColor ? `0 4px 15px ${vid.itemColor}25` : undefined }}>
-                            <div className={styles.squareImageWrapper}>
-                              {thumb ? <img draggable="false" src={thumb} alt={vid.title} className={styles.cardImage} /> : <div className={styles.placeholderImg}><Play size={32} opacity={0.8} /></div>}
-                              <div className={styles.playOverlay}><Play size={40} fill="white" /></div>
-                            </div>
-                             <div className={styles.cardContent}><h4 className={styles.cardTitle} dir="auto" style={{ width: '100%', margin: 0 }}>{vid.title}</h4></div>
-                          </SortableItem>
-                        );
-                      })}
-                    </SortableContext>
-                  <button onClick={() => { setNewItemSection('visuals'); setAddItemModalOpen(true); }} className={`${styles.squareCard} ${styles.addSquareBtn}`} disabled={!activeCustomTab} style={{ opacity: activeCustomTab ? 1 : 0.8 }}><Plus size={32} color="var(--text-muted)" /><span>הוסף סרטון</span></button>
-                </div>
-              </section>
-            )}
-          </div>
-          </>
+                {(activeCategoryTab === 'ראשי' || activeCategoryTab === 'מסמכים') && (
+                  <section className={styles.section}>
+                    <div className={styles.sectionHeader}><h2 className={styles.sectionTitle}><FileText size={20} color="var(--brand-color)" /> מסמכים</h2></div>              
+                    <div className={styles.documentsList}>
+                      <SortableContext items={documentItems.map(d=>d._id)} strategy={verticalListSortingStrategy}>
+                        {documentItems.map(doc => {
+                          const { Icon: DocIcon, color: iconColor, bg: iconBg } = getDocIconProps(doc.link || doc.url);
+                          return (
+                            <SortableItem key={doc._id} id={doc._id} href={doc.link || doc.url} className={styles.docRow} onContextMenu={(e) => handleContextMenu(e, doc)} style={{ borderColor: doc.itemColor || undefined, boxShadow: doc.itemColor ? `0 4px 15px ${doc.itemColor}25` : undefined }}>
+                              <div className={styles.docInfo}><div className={styles.docIcon} style={{ background: iconBg }}><DocIcon size={20} color={iconColor}/></div><span className={styles.docTitle}>{doc.title}</span></div>
+                              <ExternalLink size={16} className={styles.openIcon} />
+                            </SortableItem>
+                          );
+                        })}
+                      </SortableContext>
+                      {documentItems.length === 0 && <p style={{color: 'var(--text-muted)', fontSize: '0.9rem', padding: '10px 0'}}>{!activeCustomTab ? 'צור נושא קודם כדי להוסיף מסמכים.' : 'אין מסמכים בנושא זה.'}</p>}
+                      <button onClick={() => { setNewItemSection('documents'); setAddItemModalOpen(true); }} className={styles.addListBtn} disabled={!activeCustomTab} style={{ opacity: activeCustomTab ? 1 : 1 }}><Plus size={18}/> הוסף מסמך חדש</button>
+                    </div>
+                  </section>
+                )}
+
+                {(activeCategoryTab === 'ראשי' || activeCategoryTab === 'סרטונים') && (
+                  <section className={styles.section}>
+                    <div className={styles.sectionHeader}><h2 className={styles.sectionTitle}><Play size={20} color="var(--brand-color)" /> סרטונים</h2></div>              
+                    <div className={styles.visualsGrid}>
+                      <SortableContext items={visualItems.map(v=>v._id)} strategy={rectSortingStrategy}>
+                        {visualItems.map(vid => {
+                          const thumb = getThumbnail(vid);
+                          return (
+                            <SortableItem key={vid._id} id={vid._id} href={vid.link || vid.url} className={styles.squareCard} onContextMenu={(e) => handleContextMenu(e, vid)} style={{ borderColor: vid.itemColor || undefined, boxShadow: vid.itemColor ? `0 4px 15px ${vid.itemColor}25` : undefined }}>
+                              <div className={styles.squareImageWrapper}>{thumb ? <img draggable="false" src={thumb} alt={vid.title} className={styles.cardImage} /> : <div className={styles.placeholderImg}><Play size={32} opacity={0.8} /></div>}<div className={styles.playOverlay}><Play size={40} fill="white" /></div></div>
+                              <div className={styles.cardContent}><h4 className={styles.cardTitle} dir="auto" style={{ width: '100%', margin: 0 }}>{vid.title}</h4></div>
+                            </SortableItem>
+                          );
+                        })}
+                      </SortableContext>
+                      <button onClick={() => { setNewItemSection('visuals'); setAddItemModalOpen(true); }} className={`${styles.squareCard} ${styles.addSquareBtn}`} disabled={!activeCustomTab} style={{ opacity: activeCustomTab ? 1 : 0.8 }}><Plus size={32} color="var(--text-muted)" /><span>הוסף סרטון</span></button>
+                    </div>
+                  </section>
+                )}
+              </div>
+            </>
           )}
         </main>
 

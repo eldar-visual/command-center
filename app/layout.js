@@ -1,7 +1,7 @@
 import { Heebo } from 'next/font/google';
 import './globals.css';
+import AuthProvider from '@/components/AuthProvider'; // ייבוא הקומפוננטה שיוצרת את הסשן
 
-// מייבאים את Heebo ישירות דרך Next.js (עם משקלים שמתאימים לממשק)
 const heebo = Heebo({ 
   subsets: ['hebrew', 'latin'],
   weight: ['300', '400', '500', '700', '900'],
@@ -10,9 +10,13 @@ const heebo = Heebo({
 
 export default function RootLayout({ children }) {
   return (
-    // ה- className של heebo מחיל את הפונט על כל האפליקציה באופן אוטומטי
     <html lang="he" dir="rtl" className={heebo.className}>
-      <body>{children}</body>
+      <body>
+        {/* עוטפים את הילדים ב-AuthProvider כדי שכל האפליקציה תדע מי המשתמש המחובר */}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
+      </body>
     </html>
   );
 }

@@ -1,24 +1,26 @@
-.container {
+.signupWrapper {
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
   background-color: #0b0f19;
   direction: rtl;
+  padding: 20px;
 }
 
-.card {
+.signupCard {
   background: #1a2235;
   padding: 40px;
-  border-radius: 20px;
+  border-radius: 24px;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  width: 90%;
+  width: 100%;
   max-width: 400px;
   text-align: center;
+  box-shadow: 0 25px 50px rgba(0,0,0,0.5);
 }
 
 .title { color: white; font-size: 2.2rem; margin-bottom: 5px; }
-.subtitle { color: #8494aa; margin-bottom: 30px; }
+.subtitle { color: #94a3b8; margin-bottom: 30px; }
 
 .form {
   display: flex;
@@ -27,9 +29,8 @@
   align-items: center;
 }
 
-/* הפתרון לאייקונים בתוך השדה */
 .inputGroup {
-  position: relative; /* חובה! העוגן של האייקון */
+  position: relative;
   width: 100%;
   max-width: 320px;
 }
@@ -40,44 +41,29 @@
   top: 50%;
   transform: translateY(-50%);
   color: #64748b;
-  pointer-events: none;
+  z-index: 10;
 }
 
 .inputGroup input {
   width: 100%;
-  padding: 12px 45px 12px 15px; /* פאדינג ימני לאייקון */
+  padding: 12px 45px 12px 15px;
   border-radius: 12px;
   border: 1px solid #2d3748;
   background: #f1f5f9;
   color: #0f172a;
   outline: none;
+  font-size: 1rem;
 }
 
-/* הפתרון לכפתור */
 .submitBtn {
+  width: 100%;
+  max-width: 220px;
+  padding: 12px;
+  border-radius: 12px;
+  border: none;
   background: #3b82f6;
   color: white;
-  border: none;
-  padding: 12px 24px;
-  border-radius: 12px;
   font-weight: bold;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  max-width: 220px; /* מקצר את הכפתור */
-  justify-content: center;
-}
-
-.error {
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.1);
-  padding: 10px;
-  border-radius: 8px;
-  margin-bottom: 15px;
-  font-size: 0.9rem;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  margin-top: 10px;
 }

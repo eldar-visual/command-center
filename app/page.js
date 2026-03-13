@@ -3,7 +3,8 @@ import DashboardData from '@/models/DashboardData';
 import Space from '@/models/Space';
 import User from '@/models/User';
 import ClientDashboard from './ClientDashboard';
-import { cookies } from 'next/headers';
+import { getServerSession } from "next-auth";
+import { authOptions } from "./api/auth/[...nextauth]/route";
 import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
@@ -11,16 +12,15 @@ export const dynamic = 'force-dynamic';
 export default async function Page() {
   await dbConnect();
 
-  const cookieStore = await cookies();
-  const isLoggedIn = cookieStore.get('isLoggedIn')?.value;
-  const userId = cookieStore.get('userId')?.value; // שולפים את ה-ID של הלקוח
-  const userRole = cookieStore.get('userRole')?.value; // בודקים אם הוא מנהל או לקוח
+  const session = await getServerSession(authOptions);
 
   // אם אין משתמש מחובר - זורקים ללוג-אין
-  if (!isLoggedIn || !userId) {
+  if (!session) {
     redirect('/login');
   }
-
+const userId = session.user.id;
+  const userRole = session.user.role;
+  
   try {
     // 1. שליפת פרטי המשתמש המחובר מה-DB כדי להציג את שמו בתפריט
     const rawUser = await User.findById(userId).lean();

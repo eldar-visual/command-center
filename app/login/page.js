@@ -1,157 +1,94 @@
 'use client';
 import { useState } from 'react';
+import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
-import { LogIn, Mail, Lock, User, X, MailOpen } from 'lucide-react'; 
+import { LogIn, Mail, Lock, AlertCircle } from 'lucide-react';
 import styles from './login.module.css';
 
 export default function LoginPage() {
-  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [showMailModal, setShowMailModal] = useState(false);
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
- const handleLogin = async (e) => {
-    e.preventDefault();
-    setError('');
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+  setLoading(true);
+  setError('');
+  
+  console.log("מנסה להתחבר עם:", email);
 
-    try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
+  try {
+    const res = await signIn('credentials', {
+      email: email,
+      password: password,
+      redirect: false, // אנחנו מטפלים בהעברה ידנית
+    });
 
-      const data = await res.json();
+    console.log("תגובה מ-NextAuth:", res);
 
-      if (res.ok) {
-        // ההתחברות הצליחה! השרת כבר שתל את העוגיות, נשאר רק לרענן ולעבור לדף הבית
-        router.refresh(); 
-        router.push('/');
-      } else {
-        // מציג את השגיאה שקיבלנו מהשרת (משתמש לא קיים / סיסמה שגויה)
-        setError(data.error);
-      }
-    } catch (err) {
-      setError('שגיאת תקשורת. אנא נסה שוב מאוחר יותר.');
-    }
-  };
+    if (res?.error) {
+      setError('אימייל או סיסמה שגויים');
+      setLoading(false);
+    } else {
+  console.log("התחברות הצליחה! מבצע רענון וניתוב...");
+  // שימוש ב-replace מבטיח שהדפדפן לא יוכל לחזור אחורה ללוגין בלחיצת 'אחורה'
+  window.location.replace('/'); 
+}
+  } catch (err) {
+    console.error("שגיאה בתהליך ההתחברות:", err);
+    setError('שגיאת תקשורת במערכת');
+    setLoading(false);
+  }
+};
 
-  const openMailProvider = (provider) => {
-    // התיקון הקריטי: לאן נשלחים המיילים של בקשות ההרשמה
-    const to = 'aviram@eldarvisual.com';
-    const subject = 'בקשת הרשמה למערכת EldarVisual';
-    const body = 'אני מעוניין להירשם לשירות.\n\nהשם המלא שלי: \nהאימייל שלי: ';
-    
-    let url = '';
-    switch(provider) {
-      case 'gmail':
-        url = `https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-        window.open(url, '_blank');
-        break;
-      case 'outlook':
-        url = `https://outlook.live.com/mail/0/deeplink/compose?to=${to}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-        window.open(url, '_blank');
-        break;
-      case 'yahoo':
-        url = `https://compose.mail.yahoo.com/?to=${to}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-        window.open(url, '_blank');
-        break;
-      case 'other':
-        // הפעלת אפליקציית הדואר המקומית (Mailto)
-        url = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-        window.location.href = url;
-        break;
-      default:
-        break;
-    }
-    
-    // סגירת החלונית לאחר הלחיצה
-    setShowMailModal(false);
-  };
+return (
+  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', backgroundColor: '#0b0f19', direction: 'rtl' }}>
+    <div style={{ background: '#1a2235', padding: '40px', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.1)', width: '95%', maxWidth: '400px', textAlign: 'center' }}>
+      <h1 style={{ color: 'white', fontSize: '2.2rem', marginBottom: '5px' }}>EldarVisual</h1>
+      <p style={{ color: '#8494aa', marginBottom: '30px' }}>התחבר למרכז השליטה שלך</p>
 
-  return (
-    <div className={styles.loginWrapper}>
-      <motion.div animate={{ y: 0 }} className={styles.loginCard}>
-        <h1 className={styles.loginTitle}>EldarVisual</h1>
-        <p className={styles.loginSubtitle}>התחבר למרכז השליטה שלך</p>
+      {error && <div style={{ color: '#ef4444', marginBottom: '15px', fontSize: '0.9rem' }}>{error}</div>}
 
-        <form onSubmit={handleLogin} className={styles.form}>
-          <div className={styles.inputGroup}>
-            <User size={18} className={styles.inputIcon} />
-            <input 
-              type="email" 
-              placeholder="אימייל" 
-              required 
-              value={formData.email}
-              onChange={(e) => setFormData({...formData, email: e.target.value})} 
-            />
-          </div>
-          <div className={styles.inputGroup}>
-            <Lock size={18} className={styles.inputIcon} />
-            <input 
-              type="password" 
-              placeholder="סיסמה" 
-              required 
-              value={formData.password}
-              onChange={(e) => setFormData({...formData, password: e.target.value})} 
-            />
-          </div>
-          {error && <p className={styles.errorMsg}>{error}</p>}
-          
-          <button type="submit" className={styles.loginBtn}>
-            כניסה למערכת <LogIn size={18} />
-          </button>
-        </form>
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px', alignItems: 'center' }}>
+        
+        {/* שדה אימייל - מוגבל ל-300px */}
+        <div style={{ position: 'relative', width: '100%', maxWidth: '300px', display: 'flex', alignItems: 'center' }}>
+          <Mail style={{ position: 'absolute', right: '15px', color: '#64748b', zIndex: 10 }} size={18} />
+          <input 
+            type="email" 
+            placeholder="אימייל" 
+            required 
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            style={{ width: '100%', padding: '12px 45px 12px 15px', borderRadius: '12px', border: '1px solid #2d3748', background: '#f1f5f9', color: '#0f172a', outline: 'none' }}
+          />
+        </div>
 
-        <div className={styles.divider}><span>או</span></div>
+        {/* שדה סיסמה - מוגבל ל-300px */}
+        <div style={{ position: 'relative', width: '100%', maxWidth: '300px', display: 'flex', alignItems: 'center' }}>
+          <Lock style={{ position: 'absolute', right: '15px', color: '#64748b', zIndex: 10 }} size={18} />
+          <input 
+            type="password" 
+            placeholder="סיסמה" 
+            required 
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            style={{ width: '100%', padding: '12px 45px 12px 15px', borderRadius: '12px', border: '1px solid #2d3748', background: '#f1f5f9', color: '#0f172a', outline: 'none' }}
+          />
+        </div>
 
-        <button type="button" onClick={() => setShowMailModal(true)} className={styles.registerBtn}>
-           בקשת הרשמה <Mail size={18} />
+        {/* כפתור קצר וממורכז */}
+        <button 
+          type="submit" 
+          disabled={loading}
+          style={{ width: '200px', padding: '12px', borderRadius: '12px', border: 'none', background: '#3b82f6', color: 'white', fontWeight: 'bold', cursor: 'pointer', marginTop: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+        >
+          {loading ? 'מתחבר...' : <>כניסה למערכת <LogIn size={18} /></>}
         </button>
-      </motion.div>
-
-      <AnimatePresence>
-        {showMailModal && (
-          <div className={styles.modalOverlay}>
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }} 
-              animate={{ opacity: 1, scale: 1 }} 
-              exit={{ opacity: 0, scale: 0.95 }}
-              className={styles.modalContent}
-            >
-              <button onClick={() => setShowMailModal(false)} className={styles.closeModalBtn}>
-                <X size={20} />
-              </button>
-              
-              <div className={styles.modalHeader}>
-                <MailOpen size={36} color="#3b82f6" />
-                <h3>בחר שירות דואר</h3>
-                <p>איך תרצה לשלוח לנו את הבקשה?</p>
-              </div>
-
-              <div className={styles.providersGrid}>
-                <button type="button" onClick={() => openMailProvider('gmail')} className={styles.providerBtn}>
-                  <Mail color="#DB4437" size={24} />
-                  Gmail
-                </button>
-                <button type="button" onClick={() => openMailProvider('outlook')} className={styles.providerBtn}>
-                  <Mail color="#0078D4" size={24} />
-                  Outlook
-                </button>
-                <button type="button" onClick={() => openMailProvider('yahoo')} className={styles.providerBtn}>
-                  <Mail color="#6001D2" size={24} />
-                  Yahoo
-                </button>
-                <button type="button" onClick={() => openMailProvider('other')} className={`${styles.providerBtn} ${styles.otherBtn}`}>
-                  <Mail color="#94a3b8" size={24} />
-                  אפליקציית דואר במחשב
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      </form>
     </div>
-  );
+  </div>
+);
 }

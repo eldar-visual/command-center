@@ -12,6 +12,11 @@ const DashboardDataSchema = new mongoose.Schema({
   userId: { type: String },
   order: { type: Number, default: 0 },
   customIcon: { type: String }, 
+  userId: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User', 
+    required: true 
+  }
 }, { timestamps: true });
 
 delete mongoose.models.DashboardData;

@@ -1,0 +1,90 @@
+.signup-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #f4f7f6; /* צבע רקע נעים */
+  padding: 20px;
+  direction: rtl;
+}
+
+.signup-form {
+  background: #1a2235;
+  padding: 40px;
+  border-radius: 24px;
+  width: 100%;
+  max-width: 420px; /* זה מה שימנע מהטופס להיות רחב מדי */
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-items: center; /* מרכוז פנימי של כל השדות */
+}
+
+.signup-form h1 {
+  margin-bottom: 1.5rem;
+  text-align: center;
+  color: #333;
+  font-size: 1.8rem;
+}
+
+.input-group {
+  position: relative;
+  width: 100%;
+  max-width: 320px; /* הגבלת רוחב השדות */
+}
+
+.input-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: bold;
+  color: #555;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 12px 15px 12px 45px; /* פאדינג לאייקון (שים לב לכיוון ב-RTL) */
+  border-radius: 12px;
+  border: 1px solid #2d3748;
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.signup-form button {
+  width: 100%;
+  padding: 1rem;
+  background-color: #0070f3;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.signup-form button:hover {
+  background-color: #0056b3;
+}
+
+.signup-form button:disabled {
+  background-color: #ccc;
+}
+
+.error-message {
+  color: #d32f2f;
+  background: #fdecea;
+  padding: 0.8rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.login-link {
+  margin-top: 1.5rem;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.login-link a {
+  color: #0070f3;
+  text-decoration: none;
+}

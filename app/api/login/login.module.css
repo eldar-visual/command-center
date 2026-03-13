@@ -17,43 +17,41 @@
   text-align: center;
 }
 
-.title { color: white; font-size: 2.2rem; margin-bottom: 5px; }
-.subtitle { color: #8494aa; margin-bottom: 30px; }
-
 .form {
   display: flex;
   flex-direction: column;
   gap: 15px;
-  align-items: center;
+  align-items: center; /* ממרכז את האלמנטים בתוך הפורם */
 }
 
-/* הפתרון לאייקונים בתוך השדה */
+/* הפתרון לאייקונים */
 .inputGroup {
-  position: relative; /* חובה! העוגן של האייקון */
+  position: relative; /* העוגן של האייקון */
   width: 100%;
-  max-width: 320px;
+  display: flex;
+  align-items: center;
 }
 
 .inputIcon {
   position: absolute;
-  right: 15px;
-  top: 50%;
-  transform: translateY(-50%);
+  right: 15px; /* מצמיד לימין בתוך השדה */
   color: #64748b;
   pointer-events: none;
+  z-index: 10;
 }
 
 .inputGroup input {
   width: 100%;
-  padding: 12px 45px 12px 15px; /* פאדינג ימני לאייקון */
+  padding: 14px 45px 14px 15px; /* 45px מימין כדי לפנות מקום לאייקון */
   border-radius: 12px;
   border: 1px solid #2d3748;
-  background: #f1f5f9;
+  background: #f1f5f9; /* הצבע הבהיר שראינו בתמונה */
   color: #0f172a;
   outline: none;
+  font-size: 1rem;
 }
 
-/* הפתרון לכפתור */
+/* הפתרון לכפתור הארוך */
 .submitBtn {
   background: #3b82f6;
   color: white;
@@ -64,20 +62,24 @@
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 10px;
-  width: 100%;
-  max-width: 220px; /* מקצר את הכפתור */
   justify-content: center;
+  gap: 10px;
+  
+  /* אלו השורות שיקצרו אותו */
+  width: auto;
+  min-width: 200px; 
+  max-width: 280px;
+  align-self: center; /* מונע מה-Flexbox למתוח אותו */
+  margin-top: 10px;
 }
 
-.error {
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.1);
-  padding: 10px;
-  border-radius: 8px;
-  margin-bottom: 15px;
+.footer {
+  margin-top: 25px;
+  color: #8494aa;
   font-size: 0.9rem;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+}
+
+.footer a {
+  color: #38bdf8;
+  text-decoration: none;
 }
